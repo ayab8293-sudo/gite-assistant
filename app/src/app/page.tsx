@@ -1,24 +1,103 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import LoginForm from "./LoginForm";
+import ResetPasswordForm from "./ResetPasswordForm";
 export default function Home() {
-    const [connectionStatus, setConnectionStatus] = useState("Vérification...");
+  const [connectionStatus, setConnectionStatus] = useState("Vérification...");
+const [databaseStatus, setDatabaseStatus] = useState("Test en attente...");
+const [isAuthenticated, setIsAuthenticated] = useState(false);
+const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+const [authLoading, setAuthLoading] = useState(true);
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setIsAuthenticated(!!session);
+    setAuthLoading(false);
+  });
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("ÉVÉNEMENT SUPABASE :", event);
+
+    setIsAuthenticated(!!session);
+
+    if (event === "PASSWORD_RECOVERY") {
+      setIsPasswordRecovery(true);
+    }
+
+    if (event === "USER_UPDATED" || event === "SIGNED_OUT") {
+      setIsPasswordRecovery(false);
+    }
+
+    setAuthLoading(false);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/health`, {
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      },
+    })
+      .then((response) => {
+        setConnectionStatus(
+          response.ok
+            ? "Connexion Supabase réussie"
+            : `Serveur joignable, erreur HTTP ${response.status}`
+        );
+      })
+      .catch(() => {
+        setConnectionStatus("Connexion Supabase impossible");
+      });
+  }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ error }) => {
-      setConnectionStatus(
-        error ? "Connexion impossible" : "Client Supabase initialisé"
-      );
-    });
+    const testDatabase = async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .limit(1);
+
+      if (error) {
+        setDatabaseStatus(`Erreur : ${error.message}`);
+      } else {
+        setDatabaseStatus(
+          `Lecture réussie (${data.length} résultat(s))`
+        );
+      }
+    };
+
+    testDatabase();
   }, []);
-  return (
-    <main className="min-h-screen bg-[#f5f6f4] text-[#202c29]">
-      <p className="px-6 py-2 text-sm">
-  Connexion Supabase : {connectionStatus}
-</p>
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+
+  if (authLoading) {
+  return <p className="p-6">Chargement...</p>;
+}
+
+if (isPasswordRecovery) {
+  return <ResetPasswordForm />;
+}
+
+if (!isAuthenticated) {
+  return <LoginForm />;
+}
+
+return (
+  <main className="min-h-screen bg-[#f5f6f4] text-[#202c29]">
+    <p className="px-6 py-2 text-sm">
+      Connexion Supabase : {connectionStatus}
+    </p>
+
+    <p className="px-6 py-2 text-sm">
+      Base de données : {databaseStatus}
+    </p>
+
+    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-5">
+      <div>
+         <h1 className="text-2xl font-bold tracking-tight">
             Gîte<span className="text-emerald-700">Assistant</span>
           </h1>
           <p className="mt-1 text-xs text-gray-500">
