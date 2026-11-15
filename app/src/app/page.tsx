@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import LoginForm from "./LoginForm";
 import ResetPasswordForm from "./ResetPasswordForm";
+import OrganizationForm from "./OrganizationForm";
+import PropertyForm from "./PropertyForm";
+import PropertyList from "./PropertyList";
+import UnitForm from "./UnitForm";
+import UnitList from "./UnitList";
+import ReservationForm from "./ReservationForm";
+import ReservationList from "./ReservationList";
+import TaskForm from "./TaskForm";
+import TaskList from "./TaskList";
 export default function Home() {
   const [connectionStatus, setConnectionStatus] = useState("Vérification...");
 const [databaseStatus, setDatabaseStatus] = useState("Test en attente...");
@@ -121,6 +130,15 @@ return (
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-10">
+        <OrganizationForm />
+        <PropertyForm />
+        <PropertyList />
+        <UnitForm />
+        <UnitList />
+        <ReservationForm />
+        <ReservationList />
+        <TaskForm />
+        <TaskList />
         <section className="mb-9">
           <p className="text-sm font-medium text-emerald-700">
             VOTRE ESPACE DE GESTION
