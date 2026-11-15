@@ -104,9 +104,20 @@ return (
             Votre gestion, intelligemment simplifiée.
           </p>
         </div>
-        <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
-          Espace gestionnaire
-        </div>
+        <div className="flex items-center gap-3">
+  <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+    Espace gestionnaire
+  </div>
+
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut();
+    }}
+    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
+  >
+    Déconnexion
+  </button>
+</div>
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-10">
