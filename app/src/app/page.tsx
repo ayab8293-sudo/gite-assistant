@@ -13,13 +13,85 @@ import ReservationForm from "./ReservationForm";
 import ReservationList from "./ReservationList";
 import TaskForm from "./TaskForm";
 import TaskList from "./TaskList";
+type DashboardTask = {
+  id: string;
+  title: string;
+  due_at: string;
+  status: string;
+};
 export default function Home() {
   const [connectionStatus, setConnectionStatus] = useState("Vérification...");
 const [databaseStatus, setDatabaseStatus] = useState("Test en attente...");
 const [isAuthenticated, setIsAuthenticated] = useState(false);
 const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 const [authLoading, setAuthLoading] = useState(true);
+const [propertyCount, setPropertyCount] = useState(0);
+const [reservationCount, setReservationCount] = useState(0);
+const [taskCount, setTaskCount] = useState(0);
+const [unitCount, setUnitCount] = useState(0);
+const [upcomingArrivals, setUpcomingArrivals] = useState(0);
+const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([]);
 useEffect(() => {
+  const loadDashboardStats = async () => {
+    const [properties, reservations, tasks, units, arrivals] =
+      await Promise.all([
+        supabase
+          .from("properties")
+          .select("*", { count: "exact", head: true }),
+
+        supabase
+          .from("reservations")
+          .select("*", { count: "exact", head: true }),
+
+        supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["pending", "in_progress"]),
+
+        supabase
+          .from("units")
+          .select("*", { count: "exact", head: true }),
+
+        supabase
+          .from("reservations")
+          .select("*", { count: "exact", head: true })
+          .gte("check_in", new Date().toISOString().split("T")[0])
+          .in("status", ["pending", "confirmed"]),
+      ]);
+
+    setPropertyCount(properties.count ?? 0);
+    setReservationCount(reservations.count ?? 0);
+    setTaskCount(tasks.count ?? 0);
+    setUnitCount(units.count ?? 0);
+    setUpcomingArrivals(arrivals.count ?? 0);
+  };
+
+  loadDashboardStats();
+}, []);
+useEffect(() => {
+  const loadTodayTasks = async () => {
+    const now = new Date();
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("id, title, due_at, status")
+      .gte("due_at", now.toISOString())
+      .in("status", ["pending", "in_progress"])
+      .order("due_at", { ascending: true })
+      .limit(5);
+
+    if (error) {
+      console.error("Erreur chargement tâches :", error.message);
+      return;
+    }
+
+    setTodayTasks((data ?? []) as DashboardTask[]);
+  };
+
+  loadTodayTasks();
+}, []);
+
+  useEffect(() => {
   supabase.auth.getSession().then(({ data: { session } }) => {
     setIsAuthenticated(!!session);
     setAuthLoading(false);
@@ -153,11 +225,11 @@ return (
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Établissements", value: "02", icon: "⌂" },
-            { label: "Réservations", value: "12", icon: "▤" },
-            { label: "Tâches en cours", value: "05", icon: "✓" },
-            { label: "Arrivées à venir", value: "03", icon: "↗" },
-          ].map((item) => (
+  { label: "Établissements", value: propertyCount, icon: "⌂" },
+  { label: "Réservations", value: reservationCount, icon: "▤" },
+  { label: "Tâches en cours", value: taskCount, icon: "✓" },
+  { label: "Arrivées à venir", value: upcomingArrivals, icon: "↗" },
+].map((item) => (
             <div
               key={item.label}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
@@ -180,46 +252,43 @@ return (
               <span className="text-xs text-gray-400">APERÇU</span>
             </div>
 
-            <div className="mt-6 space-y-5">
-              {[
-                {
-                  time: "09:00",
-                  title: "Préparation du logement",
-                  detail: "Maison des Oliviers",
-                  status: "À effectuer",
-                },
-                {
-                  time: "11:30",
-                  title: "Contrôle du ménage",
-                  detail: "Le Jardin Secret",
-                  status: "En cours",
-                },
-                {
-                  time: "15:00",
-                  title: "Arrivée des voyageurs",
-                  detail: "Maison des Oliviers",
-                  status: "À venir",
-                },
-              ].map((task) => (
-                <div
-                  key={task.title}
-                  className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center"
-                >
-                  <span className="text-sm font-semibold text-emerald-700">
-                    {task.time}
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-semibold">{task.title}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {task.detail}
-                    </p>
-                  </div>
-                  <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-                    {task.status}
-                  </span>
-                </div>
-              ))}
-            </div>
+              <div className="mt-6 space-y-5">
+  {todayTasks.length === 0 ? (
+    <p className="text-sm text-gray-500">
+      Aucune tâche prévue aujourd'hui.
+    </p>
+  ) : (
+    todayTasks.map((task) => (
+      <div
+        key={task.id}
+        className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center"
+      >
+        <span className="text-sm font-semibold text-emerald-700">
+          {new Date(task.due_at).toLocaleString("fr-FR", {
+  day: "2-digit",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+})}
+        </span>
+
+        <div className="flex-1">
+          <p className="font-semibold">{task.title}</p>
+        </div>
+
+        <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+          {task.status === "pending"
+            ? "À effectuer"
+            : task.status === "in_progress"
+              ? "En cours"
+              : "Terminée"}
+        </span>
+      </div>
+    ))
+  )}
+
+</div>
+
           </div>
 
           <div className="rounded-2xl bg-[#183b32] p-6 text-white shadow-sm">

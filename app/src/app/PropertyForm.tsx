@@ -14,6 +14,7 @@ export default function PropertyForm() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [timezone, setTimezone] = useState("Europe/Paris");
+  const timezones = Intl.supportedValuesOf("timeZone");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -141,9 +142,11 @@ export default function PropertyForm() {
             onChange={(e) => setTimezone(e.target.value)}
             className="w-full rounded-xl border border-gray-300 px-4 py-3"
           >
-            <option value="Europe/Paris">Europe/Paris</option>
-            <option value="Europe/Bucharest">Europe/Bucharest</option>
-            <option value="Europe/London">Europe/London</option>
+           {timezones.map((zone) => (
+  <option key={zone} value={zone}>
+    {zone}
+  </option>
+))}
           </select>
         </div>
 
