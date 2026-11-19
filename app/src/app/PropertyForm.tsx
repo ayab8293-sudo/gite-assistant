@@ -82,7 +82,7 @@ export default function PropertyForm() {
     if (error) {
       setMessage("Erreur : " + error.message);
     } else {
-      setMessage("Gîte créé avec succès !");
+      setMessage("Établissement créé avec succès !");
       setName("");
       setAddress("");
     }
@@ -91,8 +91,8 @@ export default function PropertyForm() {
   };
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Ajouter un gîte</h2>
+<section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+<h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Ajouter un établissement</h2>
       <p className="mt-2 text-sm text-gray-500">
         Enregistrez un nouvel établissement dans votre organisation.
       </p>
@@ -106,7 +106,7 @@ export default function PropertyForm() {
             value={organizationId}
             onChange={(e) => setOrganizationId(e.target.value)}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
             <option value="">Choisir une organisation</option>
             {organizations.map((org) => (
@@ -120,18 +120,18 @@ export default function PropertyForm() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nom du gîte"
+          placeholder="Nom de l'établissement"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
         />
 
         <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Adresse du gîte"
+          placeholder="Adresse de l'établissement"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
-        />
+className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
+/>
 
         <div>
           <label className="mb-2 block text-sm font-medium">
@@ -140,7 +140,7 @@ export default function PropertyForm() {
           <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
            {timezones.map((zone) => (
   <option key={zone} value={zone}>
@@ -153,9 +153,9 @@ export default function PropertyForm() {
         <button
           type="submit"
           disabled={loading || !organizationId || !name.trim() || !address.trim()}
-          className="rounded-xl bg-emerald-800 px-5 py-3 font-medium text-white disabled:opacity-50"
-        >
-          {loading ? "Création..." : "Ajouter mon gîte"}
+className="rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+>
+          {loading ? "Création..." : "Ajouter mon établissement"}
         </button>
       </form>
 

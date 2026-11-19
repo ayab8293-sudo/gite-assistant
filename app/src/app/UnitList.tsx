@@ -62,9 +62,8 @@ export default function UnitList() {
   }, []);
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Mes logements</h2>
-
+    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+<h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes logements</h2>
       {loading && (
         <p className="mt-4 text-sm text-gray-500">
           Chargement des logements...
@@ -91,11 +90,11 @@ export default function UnitList() {
             return (
               <div
                 key={unit.id}
-                className="rounded-xl border border-gray-200 p-4"
+                className="rounded-xl border border-[#e2e7ef] bg-white p-5 transition duration-200 hover:border-[#c5d2e2] hover:shadow-sm"
               >
                 <h3 className="font-semibold">{unit.name}</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Gîte : {property?.name ?? "Gîte introuvable"}
+                  Établissement : {property?.name ?? "Établissement introuvable"}
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
                   Capacité : {unit.capacity} personne(s)

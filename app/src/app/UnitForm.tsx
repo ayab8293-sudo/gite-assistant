@@ -61,24 +61,24 @@ export default function UnitForm() {
   };
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Ajouter un logement</h2>
+<section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+    <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Ajouter un logement</h2>
       <p className="mt-2 text-sm text-gray-500">
-        Ajoutez une chambre, un studio ou un appartement à votre gîte.
+        Ajoutez une chambre, un studio, un appartement ou une unité à votre établissement.
       </p>
 
       <form onSubmit={createUnit} className="mt-5 space-y-4">
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Gîte
+            Établissement
           </label>
           <select
             value={propertyId}
             onChange={(e) => setPropertyId(e.target.value)}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
-            <option value="">Choisir un gîte</option>
+            <option value="">Choisir un établissement</option>
             {properties.map((property) => (
               <option key={property.id} value={property.id}>
                 {property.name}
@@ -92,7 +92,7 @@ export default function UnitForm() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Nom du logement"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
         />
 
         <div>
@@ -106,7 +106,7 @@ export default function UnitForm() {
             value={capacity}
             onChange={(e) => setCapacity(e.target.value)}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           />
         </div>
 
@@ -119,7 +119,7 @@ export default function UnitForm() {
             !capacity ||
             Number(capacity) < 1
           }
-          className="rounded-xl bg-emerald-800 px-5 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Création..." : "Ajouter mon logement"}
         </button>

@@ -105,8 +105,8 @@ export default function ReservationForm() {
   );
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Ajouter une réservation</h2>
+    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+      <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Ajouter une réservation</h2>
       <p className="mt-2 text-sm text-gray-500">
         Enregistrez une nouvelle réservation.
       </p>
@@ -114,7 +114,7 @@ export default function ReservationForm() {
       <form onSubmit={createReservation} className="mt-5 space-y-4">
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Gîte
+            Établissement
           </label>
           <select
             value={propertyId}
@@ -123,9 +123,9 @@ export default function ReservationForm() {
               setUnitId("");
             }}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
-            <option value="">Choisir un gîte</option>
+            <option value="">Choisir un établissement</option>
             {properties.map((property) => (
               <option key={property.id} value={property.id}>
                 {property.name}
@@ -143,7 +143,7 @@ export default function ReservationForm() {
             onChange={(e) => setUnitId(e.target.value)}
             required
             disabled={!propertyId}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">Choisir un logement</option>
             {availableUnits.map((unit) => (
@@ -158,7 +158,7 @@ export default function ReservationForm() {
           value={reference}
           onChange={(e) => setReference(e.target.value)}
           placeholder="Référence de réservation (facultatif)"
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
         />
 
         <input
@@ -166,7 +166,7 @@ export default function ReservationForm() {
           onChange={(e) => setGuestLabel(e.target.value)}
           placeholder="Nom ou libellé du client"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
         />
 
         <div>
@@ -178,7 +178,7 @@ export default function ReservationForm() {
             value={checkIn}
             onChange={(e) => setCheckIn(e.target.value)}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           />
         </div>
 
@@ -191,7 +191,7 @@ export default function ReservationForm() {
             value={checkOut}
             onChange={(e) => setCheckOut(e.target.value)}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           />
         </div>
 
@@ -202,7 +202,7 @@ export default function ReservationForm() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="pending">En attente</option>
             <option value="confirmed">Confirmée</option>
@@ -215,14 +215,14 @@ export default function ReservationForm() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Note (facultatif)"
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           rows={3}
         />
 
         <button
           type="submit"
           disabled={loading || !propertyId || !unitId || !guestLabel.trim() || !checkIn || !checkOut}
-          className="rounded-xl bg-emerald-800 px-5 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Création..." : "Ajouter la réservation"}
         </button>

@@ -39,8 +39,8 @@ export default function OrganizationForm() {
   };
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Créer votre organisation</h2>
+    <section className="rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+      <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Créer votre organisation</h2>
       <p className="mt-2 text-sm text-gray-500">
         Commencez par renseigner le nom de votre entreprise.
       </p>
@@ -52,13 +52,13 @@ export default function OrganizationForm() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Nom de votre organisation"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
         />
 
         <button
           type="submit"
           disabled={loading || !name.trim()}
-          className="rounded-xl bg-emerald-800 px-5 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Création..." : "Créer mon organisation"}
         </button>

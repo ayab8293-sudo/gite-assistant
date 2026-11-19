@@ -184,7 +184,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
 
       <form onSubmit={createTask} className="mt-5 space-y-4">
         <div>
-          <label className="mb-2 block text-sm font-medium">Gîte</label>
+          <label className="mb-2 block text-sm font-medium">Établissement</label>
           <select
             value={propertyId}
             onChange={(e) => {
@@ -196,7 +196,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
             required
             className="w-full rounded-xl border border-gray-300 px-4 py-3"
           >
-            <option value="">Choisir un gîte</option>
+            <option value="">Choisir un établissement</option>
             {properties.map((property) => (
               <option key={property.id} value={property.id}>
                 {property.name}

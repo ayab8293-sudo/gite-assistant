@@ -68,7 +68,7 @@ export default function ReservationList() {
   }, []);
 
   const getPropertyName = (id: string) =>
-    properties.find((property) => property.id === id)?.name ?? "Gîte inconnu";
+    properties.find((property) => property.id === id)?.name ?? "Établissement inconnu";
 
   const getUnitName = (id: string) =>
     units.find((unit) => unit.id === id)?.name ?? "Logement inconnu";
@@ -85,8 +85,8 @@ export default function ReservationList() {
   };
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Mes réservations</h2>
+    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+      <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes réservations</h2>
       <p className="mt-2 text-sm text-gray-500">
         Retrouvez toutes les réservations enregistrées.
       </p>
@@ -111,19 +111,19 @@ export default function ReservationList() {
         {reservations.map((reservation) => (
           <article
             key={reservation.id}
-            className="rounded-xl border border-gray-200 p-4"
+            className="rounded-xl border border-[#e2e7ef] bg-white p-5 transition duration-200 hover:border-[#c5d2e2] hover:shadow-sm"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold">
                 {reservation.guest_label}
               </h3>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium">
+              <span className="rounded-full bg-[#edf2f8] px-3 py-1 text-xs font-medium text-[#29466b]">
                 {getStatusLabel(reservation.status)}
               </span>
             </div>
 
             <p className="mt-3 text-sm text-gray-600">
-              <strong>Gîte :</strong> {getPropertyName(reservation.property_id)}
+              <strong>Établissement :</strong> {getPropertyName(reservation.property_id)}
             </p>
 
             <p className="mt-1 text-sm text-gray-600">

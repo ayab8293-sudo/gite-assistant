@@ -109,7 +109,7 @@ useEffect(() => {
 
 
   const getPropertyName = (id: string) =>
-    properties.find((property) => property.id === id)?.name ?? "Gîte inconnu";
+    properties.find((property) => property.id === id)?.name ?? "Établissement inconnu";
 
   const getUnitName = (id: string | null) =>
     units.find((unit) => unit.id === id)?.name ?? "Non précisé";
@@ -201,7 +201,7 @@ const getAssignedMemberName = (taskId: string) => {
             </div>
 
             <p className="mt-3 text-sm text-gray-600">
-              <strong>Gîte :</strong> {getPropertyName(task.property_id)}
+              <strong>Établissement :</strong> {getPropertyName(task.property_id)}
             </p>
 
             <p className="mt-1 text-sm text-gray-600">

@@ -63,11 +63,11 @@ const updateProperty = async (propertyId: string) => {
   );
 
   setEditingId(null);
-  setMessage("Gîte modifié avec succès !");
+  setMessage("Établissement modifié avec succès !");
 };
 const deleteProperty = async (property: Property) => {
   const confirmed = window.confirm(
-    `Veux-tu vraiment supprimer le gîte "${property.name}" ?`
+    `Veux-tu vraiment supprimer cet établissement "${property.name}" ?`
   );
 
   if (!confirmed) return;
@@ -106,7 +106,7 @@ const deleteProperty = async (property: Property) => {
     tasksCheck.data?.length
   ) {
     setMessage(
-      "Suppression impossible : ce gîte possède encore des logements, réservations ou tâches."
+      "Suppression impossible : cet établissement possède encore des unités, réservations ou tâches."
     );
     return;
   }
@@ -125,7 +125,7 @@ const deleteProperty = async (property: Property) => {
     current.filter((item) => item.id !== property.id)
   );
 
-  setMessage("Gîte supprimé avec succès !");
+  setMessage("Établissement supprimé avec succès !");
 };
   useEffect(() => {
     const loadProperties = async () => {
@@ -147,12 +147,11 @@ const deleteProperty = async (property: Property) => {
   }, []);
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Mes gîtes</h2>
-
+<section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+<h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes établissements</h2>
       {loading && (
         <p className="mt-4 text-sm text-gray-500">
-          Chargement des gîtes...
+          Chargement des établissements...
         </p>
       )}
 
@@ -162,7 +161,7 @@ const deleteProperty = async (property: Property) => {
 
       {!loading && !message && properties.length === 0 && (
         <p className="mt-4 text-sm text-gray-500">
-          Aucun gîte enregistré pour le moment.
+          Aucun établissement enregistré pour le moment.
         </p>
       )}
 
@@ -171,16 +170,16 @@ const deleteProperty = async (property: Property) => {
           {properties.map((property) => (
             <div
               key={property.id}
-              className="rounded-xl border border-gray-200 p-4"
-            >
+              className="rounded-xl border border-[#e2e7ef] bg-white p-5 transition duration-200 hover:border-[#c5d2e2] hover:shadow-sm"
+              >
               {editingId === property.id ? (
   <div className="space-y-3">
     <input
       type="text"
       value={editName}
       onChange={(e) => setEditName(e.target.value)}
-      placeholder="Nom du gîte"
-      className="w-full rounded-lg border p-2"
+      placeholder="Nom de l'établissement"
+      className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
     />
 
     <input
@@ -188,13 +187,13 @@ const deleteProperty = async (property: Property) => {
       value={editAddress}
       onChange={(e) => setEditAddress(e.target.value)}
       placeholder="Adresse"
-      className="w-full rounded-lg border p-2"
+      className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
     />
 
     <select
       value={editTimezone}
       onChange={(e) => setEditTimezone(e.target.value)}
-      className="w-full rounded-lg border p-2"
+      className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
     >
       {timezones.map((zone) => (
         <option key={zone} value={zone}>
@@ -206,14 +205,14 @@ const deleteProperty = async (property: Property) => {
     <div className="flex gap-2">
       <button
         onClick={() => updateProperty(property.id)}
-        className="rounded-lg bg-green-700 px-4 py-2 text-white"
+        className="rounded-xl bg-[#172d4d] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md"
       >
         Enregistrer
       </button>
 
       <button
         onClick={() => setEditingId(null)}
-        className="rounded-lg border px-4 py-2"
+        className="rounded-xl border border-[#d5dbe4] bg-white px-5 py-2.5 text-sm font-medium text-[#39465a] transition duration-200 hover:bg-slate-50 hover:border-[#aebdce]"
       >
         Annuler
       </button>
@@ -231,13 +230,13 @@ const deleteProperty = async (property: Property) => {
 
     <button
       onClick={() => startEditing(property)}
-      className="mt-3 rounded-lg border border-gray-300 px-4 py-2 text-sm"
+      className="mt-3 rounded-xl border border-[#d5dbe4] bg-white px-5 py-2.5 text-sm font-medium text-[#39465a] transition duration-200 hover:border-[#5279a8] hover:bg-slate-50"
     >
       Modifier
     </button>
     <button
   onClick={() => deleteProperty(property)}
-  className="ml-2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white"
+  className="ml-2 rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-medium text-red-600 transition duration-200 hover:bg-red-50"
 >
   Supprimer
 </button>

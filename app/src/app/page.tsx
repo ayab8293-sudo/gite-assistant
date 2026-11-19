@@ -11,6 +11,7 @@ import UnitForm from "./UnitForm";
 import UnitList from "./UnitList";
 import ReservationForm from "./ReservationForm";
 import ReservationList from "./ReservationList";
+import ReservationCalendar from "./ReservationCalendar";
 import TaskForm from "./TaskForm";
 import TaskList from "./TaskList";
 type DashboardTask = {
@@ -18,8 +19,42 @@ type DashboardTask = {
   title: string;
   due_at: string;
   status: string;
+  property_id: string;
+  unit_id: string | null;
+};
+
+type DashboardProperty = {
+  id: string;
+  name: string;
+};
+
+type DashboardUnit = {
+  id: string;
+  name: string;
 };
 export default function Home() {
+  const updateDashboardTaskStatus = async (
+  taskId: string,
+  newStatus: string
+) => {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: newStatus })
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Erreur changement de statut :", error.message);
+    return;
+  }
+
+  setTodayTasks((currentTasks) =>
+    currentTasks.map((task) =>
+      task.id === taskId
+        ? { ...task, status: newStatus }
+        : task
+    )
+  );
+};
   const [connectionStatus, setConnectionStatus] = useState("Vérification...");
 const [databaseStatus, setDatabaseStatus] = useState("Test en attente...");
 const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,6 +66,8 @@ const [taskCount, setTaskCount] = useState(0);
 const [unitCount, setUnitCount] = useState(0);
 const [upcomingArrivals, setUpcomingArrivals] = useState(0);
 const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([]);
+const [dashboardProperties, setDashboardProperties] = useState<DashboardProperty[]>([]);
+const [dashboardUnits, setDashboardUnits] = useState<DashboardUnit[]>([]);
 useEffect(() => {
   const loadDashboardStats = async () => {
     const [properties, reservations, tasks, units, arrivals] =
@@ -74,7 +111,7 @@ useEffect(() => {
 
     const { data, error } = await supabase
       .from("tasks")
-      .select("id, title, due_at, status")
+      .select("id, title, due_at, status, property_id, unit_id")
       .gte("due_at", now.toISOString())
       .in("status", ["pending", "in_progress"])
       .order("due_at", { ascending: true })
@@ -86,6 +123,14 @@ useEffect(() => {
     }
 
     setTodayTasks((data ?? []) as DashboardTask[]);
+    const [{ data: propertiesData }, { data: unitsData }] =
+  await Promise.all([
+    supabase.from("properties").select("id, name"),
+    supabase.from("units").select("id, name"),
+  ]);
+
+setDashboardProperties(propertiesData ?? []);
+setDashboardUnits(unitsData ?? []);
   };
 
   loadTodayTasks();
@@ -167,7 +212,7 @@ if (!isAuthenticated) {
 }
 
 return (
-  <main className="min-h-screen bg-[#f5f6f4] text-[#202c29]">
+  <main className="min-h-screen bg-[#f5f7fa] text-[#171d29]">
     <p className="px-6 py-2 text-sm">
       Connexion Supabase : {connectionStatus}
     </p>
@@ -179,14 +224,14 @@ return (
     <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-5">
       <div>
          <h1 className="text-2xl font-bold tracking-tight">
-            Gîte<span className="text-emerald-700">Assistant</span>
+            Gîte<span className="text-[#29466b]">Assistant</span>
           </h1>
           <p className="mt-1 text-xs text-gray-500">
             Votre gestion, intelligemment simplifiée.
           </p>
         </div>
         <div className="flex items-center gap-3">
-  <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+  <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
     Espace gestionnaire
   </div>
 
@@ -209,10 +254,11 @@ return (
         <UnitList />
         <ReservationForm />
         <ReservationList />
+        <ReservationCalendar />
         <TaskForm />
         <TaskList />
         <section className="mb-9">
-          <p className="text-sm font-medium text-emerald-700">
+          <p className="text-sm font-medium text-[#29466b]">
             VOTRE ESPACE DE GESTION
           </p>
           <h2 className="mt-2 text-3xl font-bold">
@@ -236,7 +282,7 @@ return (
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{item.label}</p>
-                <span className="text-xl text-emerald-700">
+                <span className="text-xl text-[#29466b]">
                   {item.icon}
                 </span>
               </div>
@@ -248,7 +294,7 @@ return (
         <section className="mt-8 grid gap-6 lg:grid-cols-3">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 lg:col-span-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Activité du jour</h3>
+              <h3 className="text-lg font-bold">Prochaines tâches</h3>
               <span className="text-xs text-gray-400">APERÇU</span>
             </div>
 
@@ -263,7 +309,7 @@ return (
         key={task.id}
         className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center"
       >
-        <span className="text-sm font-semibold text-emerald-700">
+        <span className="text-sm font-semibold text-[#29466b]">
           {new Date(task.due_at).toLocaleString("fr-FR", {
   day: "2-digit",
   month: "long",
@@ -273,16 +319,54 @@ return (
         </span>
 
         <div className="flex-1">
-          <p className="font-semibold">{task.title}</p>
-        </div>
+  <p className="font-semibold">{task.title}</p>
 
-        <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-          {task.status === "pending"
-            ? "À effectuer"
-            : task.status === "in_progress"
-              ? "En cours"
-              : "Terminée"}
-        </span>
+  <p className="mt-1 text-xs text-gray-500">
+    Établissement :{" "}
+    {dashboardProperties.find(
+      (property) => property.id === task.property_id
+    )?.name ?? "Établissement inconnu"}
+  </p>
+
+  <p className="text-xs text-gray-500">
+    Logement :{" "}
+    {dashboardUnits.find(
+      (unit) => unit.id === task.unit_id
+    )?.name ?? "Non précisé"}
+  </p>
+</div>
+
+        <div className="flex flex-wrap items-center gap-2">
+  <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+    {task.status === "pending"
+      ? "À effectuer"
+      : task.status === "in_progress"
+        ? "En cours"
+        : "Terminée"}
+  </span>
+
+  {task.status === "pending" && (
+    <button
+      onClick={() =>
+        updateDashboardTaskStatus(task.id, "in_progress")
+      }
+      className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700"
+    >
+      Commencer
+    </button>
+  )}
+
+  {task.status === "in_progress" && (
+    <button
+      onClick={() =>
+        updateDashboardTaskStatus(task.id, "completed")
+      }
+      className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-[#29466b]"
+    >
+      Terminer
+    </button>
+  )}
+</div>
       </div>
     ))
   )}
@@ -291,15 +375,15 @@ return (
 
           </div>
 
-          <div className="rounded-2xl bg-[#183b32] p-6 text-white shadow-sm">
+          <div className="rounded-2xl bg-[#172d4d] p-6 text-white shadow-sm">
             <div className="text-3xl">✦</div>
-            <p className="mt-5 text-xs font-semibold tracking-widest text-emerald-200">
+            <p className="mt-5 text-xs font-semibold tracking-widest text-blue-200">
               INTELLIGENCE ARTIFICIELLE
             </p>
             <h3 className="mt-3 text-2xl font-bold">
               Votre assistant intelligent.
             </h3>
-            <p className="mt-3 text-sm leading-6 text-emerald-100">
+            <p className="mt-3 text-sm leading-6 text-slate-200">
               Gîte Assistant vous aidera à organiser vos opérations,
               anticiper les imprévus et simplifier votre quotidien.
             </p>
@@ -307,7 +391,7 @@ return (
               <p className="text-sm font-medium">
                 Votre assistant se prépare...
               </p>
-              <p className="mt-1 text-xs text-emerald-100">
+              <p className="mt-1 text-xs text-slate-200">
                 Les fonctionnalités IA seront connectées progressivement.
               </p>
             </div>
