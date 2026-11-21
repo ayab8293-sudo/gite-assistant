@@ -176,13 +176,13 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
   );
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Créer une tâche</h2>
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+      <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Créer une tâche</h2>
       <p className="mt-2 text-sm text-gray-500">
         Organisez les opérations de votre établissement.
       </p>
 
-      <form onSubmit={createTask} className="mt-5 space-y-4">
+      <form onSubmit={createTask} className="mt-6 space-y-5">
         <div>
           <label className="mb-2 block text-sm font-medium">Établissement</label>
           <select
@@ -194,7 +194,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
   loadMembers(selectedId);
 }}
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">Choisir un établissement</option>
             {properties.map((property) => (
@@ -213,7 +213,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
             value={unitId}
             onChange={(e) => setUnitId(e.target.value)}
             disabled={!propertyId}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">Aucun logement précis</option>
             {availableUnits.map((unit) => (
@@ -232,7 +232,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
             value={assignedUserId}
             onChange={(e) => setAssignedUserId(e.target.value)}
             disabled={!propertyId}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">Personne (non attribuée)</option>
             {members.map((member) => (
@@ -248,7 +248,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Titre de la tâche"
           required
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
         />
 
         <textarea
@@ -256,7 +256,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description (facultatif)"
           rows={3}
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
         />
 
         <div>
@@ -264,7 +264,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
             <option value="cleaning">Ménage</option>
             <option value="maintenance">Maintenance</option>
@@ -279,7 +279,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
             <option value="pending">En attente</option>
             <option value="in_progress">En cours</option>
@@ -292,7 +292,7 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           >
             <option value="low">Basse</option>
 <option value="normal">Normale</option>
@@ -309,17 +309,17 @@ const createTask = async (e: React.FormEvent<HTMLFormElement>) => {
             type="datetime-local"
             value={dueAt}
             onChange={(e) => setDueAt(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3"
+            className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
           />
         </div>
 
         <button
-          type="submit"
-          disabled={loading || !propertyId || !title.trim()}
-          className="rounded-xl bg-emerald-800 px-5 py-3 font-medium text-white disabled:opacity-50"
-        >
-          {loading ? "Création..." : "Créer la tâche"}
-        </button>
+  type="submit"
+  disabled={loading || !propertyId || !title.trim()}
+  className="w-full sm:w-auto rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+>
+  {loading ? "Création..." : "Créer la tâche"}
+</button>
       </form>
 
       {message && (

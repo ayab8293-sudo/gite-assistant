@@ -62,7 +62,7 @@ export default function UnitList() {
   }, []);
 
   return (
-    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
 <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes logements</h2>
       {loading && (
         <p className="mt-4 text-sm text-gray-500">
@@ -81,7 +81,7 @@ export default function UnitList() {
       )}
 
       {!loading && !message && units.length > 0 && (
-        <div className="mt-5 space-y-3">
+        <div className="mt-6 space-y-4">
           {units.map((unit) => {
             const property = properties.find(
               (item) => item.id === unit.property_id

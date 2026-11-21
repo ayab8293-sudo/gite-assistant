@@ -105,13 +105,13 @@ export default function ReservationForm() {
   );
 
   return (
-    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
       <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Ajouter une réservation</h2>
       <p className="mt-2 text-sm text-gray-500">
         Enregistrez une nouvelle réservation.
       </p>
 
-      <form onSubmit={createReservation} className="mt-5 space-y-4">
+<form onSubmit={createReservation} className="mt-6 space-y-5">
         <div>
           <label className="mb-2 block text-sm font-medium">
             Établissement
@@ -222,7 +222,7 @@ export default function ReservationForm() {
         <button
           type="submit"
           disabled={loading || !propertyId || !unitId || !guestLabel.trim() || !checkIn || !checkOut}
-          className="rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+className="w-full sm:w-auto rounded-xl bg-[#172d4d] px-6 py-3 font-medium text-white shadow-sm transition duration-200 hover:bg-[#29466b] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Création..." : "Ajouter la réservation"}
         </button>

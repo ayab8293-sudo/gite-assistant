@@ -147,7 +147,7 @@ const deleteProperty = async (property: Property) => {
   }, []);
 
   return (
-<section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
 <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes établissements</h2>
       {loading && (
         <p className="mt-4 text-sm text-gray-500">
@@ -166,7 +166,7 @@ const deleteProperty = async (property: Property) => {
       )}
 
       {!loading && properties.length > 0 && (
-        <div className="mt-5 space-y-3">
+        <div className="mt-6 space-y-4">
           {properties.map((property) => (
             <div
               key={property.id}
@@ -230,13 +230,13 @@ const deleteProperty = async (property: Property) => {
 
     <button
       onClick={() => startEditing(property)}
-      className="mt-3 rounded-xl border border-[#d5dbe4] bg-white px-5 py-2.5 text-sm font-medium text-[#39465a] transition duration-200 hover:border-[#5279a8] hover:bg-slate-50"
+      className="mt-3 block w-full sm:inline-block sm:w-auto rounded-xl border border-[#d5dbe4] bg-white px-5 py-2.5 text-sm font-medium text-[#39465a] transition duration-200 hover:border-[#5279a8] hover:bg-slate-50"
     >
       Modifier
     </button>
     <button
   onClick={() => deleteProperty(property)}
-  className="ml-2 rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-medium text-red-600 transition duration-200 hover:bg-red-50"
+  className="mt-2 block w-full sm:ml-2 sm:mt-0 sm:inline-block sm:w-auto rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-medium text-red-600 transition duration-200 hover:bg-red-50"
 >
   Supprimer
 </button>

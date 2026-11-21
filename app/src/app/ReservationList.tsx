@@ -85,7 +85,7 @@ export default function ReservationList() {
   };
 
   return (
-    <section className="mt-6 rounded-2xl border border-[#e2e7ef] bg-white p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
       <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes réservations</h2>
       <p className="mt-2 text-sm text-gray-500">
         Retrouvez toutes les réservations enregistrées.
@@ -107,7 +107,7 @@ export default function ReservationList() {
         </p>
       )}
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-6 space-y-4">
         {reservations.map((reservation) => (
           <article
             key={reservation.id}

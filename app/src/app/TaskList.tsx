@@ -159,8 +159,8 @@ const getAssignedMemberName = (taskId: string) => {
 };
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">Mes tâches</h2>
+    <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
+      <h2 className="text-xl font-semibold tracking-tight text-[#171d29]">Mes tâches</h2>
       <p className="mt-2 text-sm text-gray-500">
         Retrouvez les opérations à effectuer dans vos établissements.
       </p>
@@ -181,18 +181,19 @@ const getAssignedMemberName = (taskId: string) => {
         </p>
       )}
 
-      <div className="mt-5 space-y-4">
+
+<div className="mt-6 space-y-4">
         {tasks.map((task) => (
           <article
             key={task.id}
-            className="rounded-xl border border-gray-200 p-4"
+            className="rounded-xl border border-[#e2e7ef] bg-white p-5 transition duration-200 hover:border-[#c5d2e2] hover:shadow-sm"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">{task.title}</h3>
+              <h3 className="font-semibold tracking-tight text-[#171d29]">{task.title}</h3>
               <select
   value={task.status}
   onChange={(e) => updateTaskStatus(task.id, e.target.value)}
-  className="rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium"
+className="w-full sm:w-auto rounded-xl border border-[#d5dbe4] bg-[#edf2f8] px-3 py-2 text-xs font-medium text-[#29466b] outline-none transition duration-200 focus:border-[#5279a8] focus:ring-2 focus:ring-[#5279a8]/10"
 >
   <option value="pending">En attente</option>
   <option value="in_progress">En cours</option>
@@ -200,33 +201,33 @@ const getAssignedMemberName = (taskId: string) => {
 </select>
             </div>
 
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-[#596579]">
               <strong>Établissement :</strong> {getPropertyName(task.property_id)}
             </p>
 
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-[#596579]">
               <strong>Logement :</strong> {getUnitName(task.unit_id)}
             </p>
 
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-[#596579]" >
               <strong>Catégorie :</strong> {getCategoryLabel(task.category)}
             </p>
-<p className="mt-1 text-sm text-gray-600">
+<p className="mt-1 text-sm text-[#596579]">
   <strong>Attribuée à :</strong> {getAssignedMemberName(task.id)}
 </p>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-[#596579]">
               <strong>Priorité :</strong> {getPriorityLabel(task.priority)}
             </p>
 
             {task.due_at && (
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-[#596579]">
                 <strong>Date limite :</strong>{" "}
                 {new Date(task.due_at).toLocaleString("fr-FR")}
               </p>
             )}
 
             {task.description && (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-[#596579]">
                 <strong>Description :</strong> {task.description}
               </p>
             )}
