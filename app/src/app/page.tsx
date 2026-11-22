@@ -42,6 +42,7 @@ type DashboardProperty = {
 type DashboardUnit = {
   id: string;
   name: string;
+  property_id: string;
 };
 export default function Home() {
   const updateDashboardTaskStatus = async (
@@ -76,10 +77,17 @@ const [propertyCount, setPropertyCount] = useState(0);
 const [reservationCount, setReservationCount] = useState(0);
 const [taskCount, setTaskCount] = useState(0);
 const [unitCount, setUnitCount] = useState(0);
+const [occupancyRate, setOccupancyRate] = useState(0);
 const [upcomingArrivals, setUpcomingArrivals] = useState(0);
 const [totalRevenue, setTotalRevenue] = useState(0);
 const [totalPaid, setTotalPaid] = useState(0);
 const [totalOutstanding, setTotalOutstanding] = useState(0);
+const [monthlyRevenue, setMonthlyRevenue] = useState<
+  { month: string; revenue: number }[]
+>([]);
+const [monthlyPaid, setMonthlyPaid] = useState<
+  { month: string; paid: number }[]
+>([]);
 const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([]);
 const [dashboardProperties, setDashboardProperties] = useState<DashboardProperty[]>([]);
 const [selectedPropertyId, setSelectedPropertyId] = useState("all");
@@ -138,7 +146,7 @@ if (propertyFilter) {
 }
 let financialReservationsQuery = supabase
   .from("reservations")
-  .select("property_id, total_amount, paid_amount, status")
+  .select("property_id, unit_id, total_amount, paid_amount, status, check_in, check_out")
   .neq("status", "cancelled");
 
 if (propertyFilter) {
@@ -188,6 +196,127 @@ financialReservationsQuery,
     setUpcomingArrivals(arrivals.count ?? 0);
     const financialData = financialReservations.data ?? [];
 
+const currentMonthStart = new Date();
+currentMonthStart.setDate(1);
+currentMonthStart.setHours(0, 0, 0, 0);
+
+const nextMonthStart = new Date(currentMonthStart);
+nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+
+const daysInCurrentMonth = new Date(
+  currentMonthStart.getFullYear(),
+  currentMonthStart.getMonth() + 1,
+  0
+).getDate();
+
+const occupiedNights = new Set<string>();
+
+financialData.forEach((reservation) => {
+  if (
+    !reservation.unit_id ||
+    !reservation.check_in ||
+    !reservation.check_out
+  ) return;
+
+  if (
+    reservation.status !== "confirmed" &&
+    reservation.status !== "completed"
+  ) return;
+
+  const checkInDate = new Date(`${reservation.check_in}T12:00:00`);
+  const checkOutDate = new Date(`${reservation.check_out}T12:00:00`);
+
+  const night = new Date(checkInDate);
+
+  while (night < checkOutDate && night < nextMonthStart) {
+    if (night >= currentMonthStart) {
+      occupiedNights.add(
+        `${reservation.unit_id}-${night.toISOString().split("T")[0]}`
+      );
+    }
+
+    night.setDate(night.getDate() + 1);
+  }
+});
+
+const availableNights = (units.count ?? 0) * daysInCurrentMonth;
+
+setOccupancyRate(
+  availableNights > 0
+    ? Math.round((occupiedNights.size / availableNights) * 100)
+    : 0
+);
+
+
+const months = Array.from({ length: 6 }, (_, index) => {
+  const date = new Date();
+  date.setDate(1);
+  date.setMonth(date.getMonth() - (5 - index));
+  return date;
+});
+
+const monthlyTotals = new Map(
+  months.map((date) => [
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+    0,
+  ])
+);
+
+financialData.forEach((reservation) => {
+  if (!reservation.check_in) return;
+
+  const date = new Date(`${reservation.check_in}T12:00:00`);
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  if (monthlyTotals.has(key)) {
+    monthlyTotals.set(
+      key,
+      (monthlyTotals.get(key) ?? 0) + Number(reservation.total_amount ?? 0)
+    );
+  }
+});
+
+setMonthlyRevenue(
+  months.map((date) => {
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    return {
+      month: date.toLocaleDateString("fr-FR", { month: "short" }),
+      revenue: monthlyTotals.get(key) ?? 0,
+    };
+  })
+);
+const monthlyPaidTotals = new Map(
+  months.map((date) => [
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+    0,
+  ])
+);
+
+financialData.forEach((reservation) => {
+  if (!reservation.check_in) return;
+
+  const date = new Date(`${reservation.check_in}T12:00:00`);
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  if (monthlyPaidTotals.has(key)) {
+    monthlyPaidTotals.set(
+      key,
+      (monthlyPaidTotals.get(key) ?? 0) + Number(reservation.paid_amount ?? 0)
+    );
+  }
+});
+
+setMonthlyPaid(
+  months.map((date) => {
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    return {
+      month: date.toLocaleDateString("fr-FR", { month: "short" }),
+      paid: monthlyPaidTotals.get(key) ?? 0,
+    };
+  })
+);
 const revenue = financialData.reduce(
   (total, reservation) => total + Number(reservation.total_amount ?? 0),
   0
@@ -214,24 +343,27 @@ setTotalOutstanding(outstanding);
 
   loadDashboardStats();
   }, [authLoading, isAuthenticated, selectedPropertyId]);
+
+    
 useEffect(() => {
-    if (authLoading || !isAuthenticated) return;
+  if (authLoading || !isAuthenticated) return;
+
   const loadTodayTasks = async () => {
     const now = new Date();
 
     let tasksQuery = supabase
-  .from("tasks")
-  .select("id, title, due_at, status, property_id, unit_id")
-  .gte("due_at", now.toISOString())
-  .in("status", ["pending", "in_progress"]);
+      .from("tasks")
+      .select("id, title, due_at, status, property_id, unit_id")
+      .gte("due_at", now.toISOString())
+      .in("status", ["pending", "in_progress"]);
 
-if (selectedPropertyId !== "all") {
-  tasksQuery = tasksQuery.eq("property_id", selectedPropertyId);
-}
+    if (selectedPropertyId !== "all") {
+      tasksQuery = tasksQuery.eq("property_id", selectedPropertyId);
+    }
 
-const { data, error } = await tasksQuery
-  .order("due_at", { ascending: true })
-  .limit(5);
+    const { data, error } = await tasksQuery
+      .order("due_at", { ascending: true })
+      .limit(5);
 
     if (error) {
       console.error("Erreur chargement tâches :", error.message);
@@ -239,14 +371,15 @@ const { data, error } = await tasksQuery
     }
 
     setTodayTasks((data ?? []) as DashboardTask[]);
-    const [{ data: propertiesData }, { data: unitsData }] =
-  await Promise.all([
-    supabase.from("properties").select("id, name"),
-    supabase.from("units").select("id, name"),
-  ]);
 
-setDashboardProperties(propertiesData ?? []);
-setDashboardUnits(unitsData ?? []);
+    const [{ data: propertiesData }, { data: unitsData }] =
+      await Promise.all([
+        supabase.from("properties").select("id, name"),
+        supabase.from("units").select("id, name, property_id"),
+      ]);
+
+    setDashboardProperties(propertiesData ?? []);
+    setDashboardUnits(unitsData ?? []);
   };
 
   loadTodayTasks();
@@ -538,6 +671,7 @@ return (
   { label: "Montant total réservé", value: `${totalRevenue.toLocaleString("fr-FR")} €`, icon: Wallet },
 { label: "Montant encaissé", value: `${totalPaid.toLocaleString("fr-FR")} €`, icon: CreditCard },
 { label: "Reste à encaisser", value: `${totalOutstanding.toLocaleString("fr-FR")} €`, icon: TrendingUp },
+{ label: "Taux d'occupation", value: `${occupancyRate} %`, icon: BedDouble },
 ].map((item) => (
             <div
               key={item.label}
@@ -552,13 +686,228 @@ return (
     <item.icon size={21} strokeWidth={1.7} />
   </span>
 </div>
-<p className="mt-5 text-4xl font-semibold tracking-[-0.05em] tabular-nums text-[#101e33] sm:mt-6 sm:text-[42px]">
-  {item.value}
-</p>
+{item.label === "Taux d'occupation" ? (
+  <div className="mt-5 flex items-center gap-4 sm:mt-6">
+    <div
+      className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
+      style={{
+        background: `conic-gradient(#29466b ${occupancyRate * 3.6}deg, #edf0f4 0deg)`,
+      }}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
+        <span className="text-sm font-bold tabular-nums text-[#101e33]">
+          {occupancyRate}%
+        </span>
+      </div>
+    </div>
+    <p className="text-sm text-[#8993a2]">
+      Occupation ce mois-ci
+    </p>
+  </div>
+) : (
+  <p className="mt-5 text-4xl font-semibold tracking-[-0.05em] tabular-nums text-[#101e33] sm:mt-6 sm:text-[42px]">
+    {item.value}
+  </p>
+)}
             </div>
           ))}
         </section>
 
+<section className="mt-6 rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] sm:p-7">
+  <div className="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-2xl">
+        Évolution des réservations
+      </h3>
+      <p className="mt-1 text-sm text-[#8993a2]">
+        Montants réservés selon le mois d'arrivée
+      </p>
+    </div>
+
+    <span className="rounded-full border border-[#dce5f0] bg-[#f1f5fa] px-3 py-1.5 text-xs font-semibold text-[#45658c]">
+      6 derniers mois
+    </span>
+  </div>
+<div className="mt-6 grid grid-cols-2 gap-3">
+  <div className="rounded-2xl border border-[#e6eaf0] bg-[#f8f9fb] p-4">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#8993a2]">
+      Total réservé
+    </p>
+    <p className="mt-2 text-xl font-semibold tracking-tight text-[#172d4d]">
+      {monthlyRevenue
+        .reduce((total, item) => total + item.revenue, 0)
+        .toLocaleString("fr-FR")} €
+    </p>
+    <p className="mt-1 text-xs text-[#8993a2]">
+      Sur les 6 derniers mois
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-[#e6eaf0] bg-[#f8f9fb] p-4">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#8993a2]">
+      Meilleur mois
+    </p>
+    <p className="mt-2 text-xl font-semibold tracking-tight text-[#172d4d]">
+      {monthlyRevenue.length > 0
+        ? monthlyRevenue.reduce((best, item) =>
+            item.revenue > best.revenue ? item : best
+          ).month
+        : "—"}
+    </p>
+    <p className="mt-1 text-xs text-[#8993a2]">
+      Meilleur montant réservé
+    </p>
+  </div>
+</div>
+  <div className="mt-8 grid grid-cols-6 gap-2 sm:gap-5">
+    {monthlyRevenue.map((item, index) => {
+      const maxRevenue = Math.max(
+        ...monthlyRevenue.map((entry) => entry.revenue),
+        1
+      );
+
+      const barHeight = (item.revenue / maxRevenue) * 100;
+
+      return (
+        <div key={`${item.month}-${index}`} className="flex min-w-0 flex-col items-center">
+          <p className="mb-3 text-center text-[10px] font-semibold text-[#45658c] sm:text-xs">
+            {item.revenue.toLocaleString("fr-FR")} €
+          </p>
+
+          
+          <div className="relative flex h-36 w-full items-end justify-center overflow-hidden rounded-xl border border-[#edf0f4] bg-[#f8f9fb] p-1.5 sm:p-2">
+  <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[#dce3ec]" />
+
+  <div
+    className="relative z-10 w-full max-w-12 rounded-lg bg-gradient-to-t from-[#172d4d] to-[#5279a8] transition-all duration-500"
+    style={{
+      height: `${barHeight}%`,
+      minHeight: item.revenue > 0 ? "6px" : "3px",
+background: item.revenue > 0
+  ? undefined
+  : "#dce3ec",
+    }}
+  />
+</div>
+
+          <p className="mt-3 text-[10px] font-semibold capitalize text-[#858e9b] sm:text-xs">
+            {item.month}
+          </p>
+        </div>
+      );
+    })}
+  </div>
+</section>
+<section className="mt-6 rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] sm:p-7">
+  <div>
+    <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-2xl">
+      Réservé vs encaissé
+    </h3>
+    <p className="mt-1 text-sm text-[#8993a2]">
+      Comparaison des montants par mois d'arrivée
+    </p>
+  </div>
+
+  <div className="mt-6 flex flex-wrap gap-5">
+    <div className="flex items-center gap-2">
+      <span className="h-3 w-3 rounded-sm bg-[#29466b]" />
+      <span className="text-xs text-[#697586]">Montant réservé</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="h-3 w-3 rounded-sm bg-[#8da8c8]" />
+      <span className="text-xs text-[#697586]">Montant encaissé</span>
+    </div>
+  </div>
+
+  <div className="mt-8 space-y-6">
+    {monthlyRevenue.map((item, index) => {
+      const paid = monthlyPaid[index]?.paid ?? 0;
+      const maxAmount = Math.max(
+        ...monthlyRevenue.map((entry) => entry.revenue),
+        1
+      );
+
+      return (
+        <div key={`${item.month}-${index}`}>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold capitalize text-[#45658c]">
+              {item.month}
+            </span>
+            <span className="text-[11px] tabular-nums text-[#8993a2]">
+              {item.revenue.toLocaleString("fr-FR")} € / {paid.toLocaleString("fr-FR")} €
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="h-3 overflow-hidden rounded-full bg-[#f1f3f6]">
+              <div
+                className="h-full rounded-full bg-[#29466b] transition-all duration-500"
+                style={{ width: `${(item.revenue / maxAmount) * 100}%` }}
+              />
+            </div>
+
+            <div className="h-3 overflow-hidden rounded-full bg-[#f1f3f6]">
+              <div
+                className="h-full rounded-full bg-[#8da8c8] transition-all duration-500"
+                style={{ width: `${(paid / maxAmount) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</section>
+<section className="mt-6 overflow-hidden rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] sm:p-7">
+  <div>
+    <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-2xl">
+      Performance financière
+    </h3>
+    <p className="mt-1 text-sm text-[#8993a2]">
+      Suivi de vos encaissements
+    </p>
+  </div>
+
+  <div className="mt-7 grid gap-6 sm:grid-cols-2">
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#8993a2]">
+        Taux d'encaissement
+      </p>
+
+      <p className="mt-2 text-4xl font-semibold tracking-tight text-[#172d4d]">
+        {totalRevenue > 0
+          ? Math.round((totalPaid / totalRevenue) * 100)
+          : 0}%
+      </p>
+
+      <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#edf0f4]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#172d4d] to-[#5279a8] transition-all duration-700"
+          style={{
+            width: `${totalRevenue > 0
+              ? Math.min((totalPaid / totalRevenue) * 100, 100)
+              : 0}%`,
+          }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-[#8993a2]">
+        Part du montant total déjà encaissée
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-[#e6eaf0] bg-[#f8f9fb] p-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#8993a2]">
+        Reste à percevoir
+      </p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums text-[#172d4d]">
+        {totalOutstanding.toLocaleString("fr-FR")} €
+      </p>
+      <p className="mt-2 text-xs text-[#8993a2]">
+        Montant restant sur vos réservations
+      </p>
+    </div>
+  </div>
+</section>
        <section className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-3">
         <div className="group relative overflow-hidden rounded-3xl border border-[#e9edf2] bg-white p-5 shadow-[0_6px_28px_rgba(16,30,51,0.04)] transition-all duration-300 hover:border-[#c5d2e2] hover:shadow-[0_16px_40px_rgba(16,30,51,0.08)] sm:p-7 lg:col-span-2">
             <div className="flex items-center justify-between">
