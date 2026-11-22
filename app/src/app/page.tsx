@@ -13,6 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { getLocalDate } from "../lib/date-utils";
 import LoginForm from "./LoginForm";
 import ResetPasswordForm from "./ResetPasswordForm";
 import OrganizationForm from "./OrganizationForm";
@@ -37,6 +38,7 @@ type DashboardTask = {
 type DashboardProperty = {
   id: string;
   name: string;
+  timezone: string | null;
 };
 
 type DashboardUnit = {
@@ -79,6 +81,9 @@ const [taskCount, setTaskCount] = useState(0);
 const [unitCount, setUnitCount] = useState(0);
 const [occupancyRate, setOccupancyRate] = useState(0);
 const [upcomingArrivals, setUpcomingArrivals] = useState(0);
+const [todayArrivals, setTodayArrivals] = useState(0);
+const [todayDepartures, setTodayDepartures] = useState(0);
+const [occupiedUnitsToday, setOccupiedUnitsToday] = useState(0);
 const [totalRevenue, setTotalRevenue] = useState(0);
 const [totalPaid, setTotalPaid] = useState(0);
 const [totalOutstanding, setTotalOutstanding] = useState(0);
@@ -165,7 +170,7 @@ if (propertyFilter) {
 }
 let unitsQuery = supabase
   .from("units")
-  .select("*", { count: "exact", head: true });
+  .select("id, property_id", { count: "exact" });
 
 if (propertyFilter) {
   unitsQuery = unitsQuery.eq("property_id", selectedPropertyId);
@@ -173,8 +178,8 @@ if (propertyFilter) {
     const [properties, reservations, tasks, units, arrivals, financialReservations] =
       await Promise.all([
         supabase
-          .from("properties")
-          .select("*", { count: "exact", head: true }),
+  .from("properties")
+  .select("id, timezone", { count: "exact" }),
 
         reservationsQuery,
 
@@ -195,51 +200,115 @@ financialReservationsQuery,
     setUnitCount(units.count ?? 0);
     setUpcomingArrivals(arrivals.count ?? 0);
     const financialData = financialReservations.data ?? [];
+    
+const now = new Date();
 
-const currentMonthStart = new Date();
-currentMonthStart.setDate(1);
-currentMonthStart.setHours(0, 0, 0, 0);
 
-const nextMonthStart = new Date(currentMonthStart);
-nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+const propertyLocalDates = new Map(
+  (properties.data ?? []).map((property) => [
+    property.id,
+    getLocalDate(now, property.timezone || "Europe/Paris"),
+  ])
+);
 
-const daysInCurrentMonth = new Date(
-  currentMonthStart.getFullYear(),
-  currentMonthStart.getMonth() + 1,
-  0
-).getDate();
+const getToday = (propertyId: string) =>
+  propertyLocalDates.get(propertyId) ?? getLocalDate(now, "Europe/Paris");
+
+const arrivalsToday = financialData.filter(
+  (reservation) =>
+    reservation.check_in === getToday(reservation.property_id) &&
+    ["pending", "confirmed"].includes(reservation.status)
+);
+
+const departuresToday = financialData.filter(
+  (reservation) =>
+    reservation.check_out === getToday(reservation.property_id) &&
+    ["confirmed", "completed"].includes(reservation.status)
+);
+
+const occupiedUnits = new Set(
+  financialData
+    .filter(
+      (reservation) => {
+        const today = getToday(reservation.property_id);
+
+        return (
+          reservation.check_in <= today &&
+          reservation.check_out > today &&
+          ["confirmed", "completed"].includes(reservation.status)
+        );
+      }
+    )
+    .map((reservation) => reservation.unit_id)
+    .filter(Boolean)
+);
+
+setTodayArrivals(arrivalsToday.length);
+setTodayDepartures(departuresToday.length);
+setOccupiedUnitsToday(occupiedUnits.size);
 
 const occupiedNights = new Set<string>();
+let availableNights = 0;
 
-financialData.forEach((reservation) => {
-  if (
-    !reservation.unit_id ||
-    !reservation.check_in ||
-    !reservation.check_out
-  ) return;
+const relevantProperties = (properties.data ?? []).filter(
+  (property) =>
+    !propertyFilter || property.id === selectedPropertyId
+);
 
-  if (
-    reservation.status !== "confirmed" &&
-    reservation.status !== "completed"
-  ) return;
+const unitData = units.data ?? [];
 
-  const checkInDate = new Date(`${reservation.check_in}T12:00:00`);
-  const checkOutDate = new Date(`${reservation.check_out}T12:00:00`);
+relevantProperties.forEach((property) => {
+  const today = getToday(property.id);
+  const currentMonth = today.slice(0, 7);
+  const currentMonthStart = `${currentMonth}-01`;
 
-  const night = new Date(checkInDate);
+  const [year, month] = currentMonth.split("-").map(Number);
 
-  while (night < checkOutDate && night < nextMonthStart) {
-    if (night >= currentMonthStart) {
+  const nextMonthStart = new Date(
+    Date.UTC(year, month, 1)
+  ).toISOString().split("T")[0];
+
+  const daysInCurrentMonth = new Date(
+    Date.UTC(year, month, 0)
+  ).getUTCDate();
+
+  const propertyUnits = unitData.filter(
+    (unit) => unit.property_id === property.id
+  );
+
+  availableNights += propertyUnits.length * daysInCurrentMonth;
+
+  financialData.forEach((reservation) => {
+    if (
+      reservation.property_id !== property.id ||
+      !reservation.unit_id ||
+      !reservation.check_in ||
+      !reservation.check_out ||
+      !["confirmed", "completed"].includes(reservation.status)
+    ) return;
+
+    const startNight =
+      reservation.check_in > currentMonthStart
+        ? reservation.check_in
+        : currentMonthStart;
+
+    const endNight =
+      reservation.check_out < nextMonthStart
+        ? reservation.check_out
+        : nextMonthStart;
+
+    const night = new Date(`${startNight}T00:00:00Z`);
+    const endDate = new Date(`${endNight}T00:00:00Z`);
+
+    while (night < endDate) {
       occupiedNights.add(
         `${reservation.unit_id}-${night.toISOString().split("T")[0]}`
       );
+
+      night.setUTCDate(night.getUTCDate() + 1);
     }
-
-    night.setDate(night.getDate() + 1);
-  }
+  });
 });
-
-const availableNights = (units.count ?? 0) * daysInCurrentMonth;
 
 setOccupancyRate(
   availableNights > 0
@@ -247,76 +316,90 @@ setOccupancyRate(
     : 0
 );
 
+const chartProperties = (properties.data ?? []).filter(
+  (property) =>
+    !propertyFilter || property.id === selectedPropertyId
+);
 
-const months = Array.from({ length: 6 }, (_, index) => {
-  const date = new Date();
-  date.setDate(1);
-  date.setMonth(date.getMonth() - (5 - index));
-  return date;
+const propertyMonthWindows = new Map<string, Set<string>>();
+const monthKeys = new Set<string>();
+
+chartProperties.forEach((property) => {
+  const today = getToday(property.id);
+  const [year, month] = today.slice(0, 7).split("-").map(Number);
+
+  const propertyMonths = new Set<string>();
+
+  for (let index = 5; index >= 0; index--) {
+    const date = new Date(Date.UTC(year, month - 1 - index, 1));
+
+    const key = `${date.getUTCFullYear()}-${String(
+      date.getUTCMonth() + 1
+    ).padStart(2, "0")}`;
+
+    propertyMonths.add(key);
+    monthKeys.add(key);
+  }
+
+  propertyMonthWindows.set(property.id, propertyMonths);
 });
 
+const months = Array.from(monthKeys)
+  .sort()
+  .map((key) => ({
+    key,
+    label: new Intl.DateTimeFormat("fr-FR", {
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${key}-01T12:00:00Z`)),
+  }));
+
 const monthlyTotals = new Map(
-  months.map((date) => [
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-    0,
-  ])
+  months.map(({ key }) => [key, 0])
+);
+
+const monthlyPaidTotals = new Map(
+  months.map(({ key }) => [key, 0])
 );
 
 financialData.forEach((reservation) => {
   if (!reservation.check_in) return;
 
-  const date = new Date(`${reservation.check_in}T12:00:00`);
-  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const key = reservation.check_in.slice(0, 7);
 
-  if (monthlyTotals.has(key)) {
-    monthlyTotals.set(
-      key,
-      (monthlyTotals.get(key) ?? 0) + Number(reservation.total_amount ?? 0)
-    );
-  }
+  const propertyMonths = propertyMonthWindows.get(
+    reservation.property_id
+  );
+
+  if (!propertyMonths?.has(key)) return;
+
+  monthlyTotals.set(
+    key,
+    (monthlyTotals.get(key) ?? 0) +
+      Number(reservation.total_amount ?? 0)
+  );
+
+  monthlyPaidTotals.set(
+    key,
+    (monthlyPaidTotals.get(key) ?? 0) +
+      Number(reservation.paid_amount ?? 0)
+  );
 });
 
 setMonthlyRevenue(
-  months.map((date) => {
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-    return {
-      month: date.toLocaleDateString("fr-FR", { month: "short" }),
-      revenue: monthlyTotals.get(key) ?? 0,
-    };
-  })
+  months.map(({ key, label }) => ({
+    month: label,
+    revenue: monthlyTotals.get(key) ?? 0,
+  }))
 );
-const monthlyPaidTotals = new Map(
-  months.map((date) => [
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-    0,
-  ])
-);
-
-financialData.forEach((reservation) => {
-  if (!reservation.check_in) return;
-
-  const date = new Date(`${reservation.check_in}T12:00:00`);
-  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-  if (monthlyPaidTotals.has(key)) {
-    monthlyPaidTotals.set(
-      key,
-      (monthlyPaidTotals.get(key) ?? 0) + Number(reservation.paid_amount ?? 0)
-    );
-  }
-});
 
 setMonthlyPaid(
-  months.map((date) => {
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-    return {
-      month: date.toLocaleDateString("fr-FR", { month: "short" }),
-      paid: monthlyPaidTotals.get(key) ?? 0,
-    };
-  })
+  months.map(({ key, label }) => ({
+    month: label,
+    paid: monthlyPaidTotals.get(key) ?? 0,
+  }))
 );
+
 const revenue = financialData.reduce(
   (total, reservation) => total + Number(reservation.total_amount ?? 0),
   0
@@ -374,7 +457,7 @@ useEffect(() => {
 
     const [{ data: propertiesData }, { data: unitsData }] =
       await Promise.all([
-        supabase.from("properties").select("id, name"),
+        supabase.from("properties").select("id, name, timezone"),
         supabase.from("units").select("id, name, property_id"),
       ]);
 
@@ -712,7 +795,53 @@ return (
             </div>
           ))}
         </section>
+<section className="mt-6">
+  <div className="mb-4">
+    <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33]">
+      Activité du jour
+    </h3>
+    <p className="mt-1 text-sm text-[#8993a2]">
+      Vue d'ensemble de l'activité opérationnelle
+    </p>
+  </div>
 
+  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    {[
+      {
+        label: "Arrivées aujourd'hui",
+        value: todayArrivals,
+        icon: CalendarDays,
+      },
+      {
+        label: "Départs aujourd'hui",
+        value: todayDepartures,
+        icon: CalendarRange,
+      },
+      {
+        label: "Logements occupés",
+        value: occupiedUnitsToday,
+        icon: BedDouble,
+      },
+    ].map((item) => (
+      <div
+        key={item.label}
+        className="rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] transition-all duration-300 hover:-translate-y-1 hover:border-[#c5d2e2] hover:shadow-[0_18px_40px_rgba(16,30,51,0.09)] sm:p-6"
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8993a2]">
+            {item.label}
+          </p>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e5eaf1] bg-[#f1f5fa] text-[#29466b]">
+            <item.icon size={21} strokeWidth={1.7} />
+          </span>
+        </div>
+        <p className="mt-5 text-4xl font-semibold tracking-[-0.05em] tabular-nums text-[#101e33]">
+          {item.value}
+        </p>
+      </div>
+    ))}
+  </div>
+</section>
 <section className="mt-6 rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] sm:p-7">
   <div className="flex flex-wrap items-center justify-between gap-3">
     <div>
@@ -798,6 +927,7 @@ background: item.revenue > 0
     })}
   </div>
 </section>
+
 <section className="mt-6 rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] sm:p-7">
   <div>
     <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-2xl">
@@ -1024,7 +1154,9 @@ background: item.revenue > 0
 </div>
 </section>
 
-<OrganizationForm />
+<div className="mt-10">
+  <OrganizationForm />
+</div>
 
 <div id="etablissements" className="scroll-mt-8">
   <PropertyForm />
