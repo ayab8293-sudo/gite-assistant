@@ -8,6 +8,9 @@ import {
   CalendarDays,
   CalendarRange,
   ClipboardList,
+    Wallet,
+  CreditCard,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import LoginForm from "./LoginForm";
@@ -74,8 +77,12 @@ const [reservationCount, setReservationCount] = useState(0);
 const [taskCount, setTaskCount] = useState(0);
 const [unitCount, setUnitCount] = useState(0);
 const [upcomingArrivals, setUpcomingArrivals] = useState(0);
+const [totalRevenue, setTotalRevenue] = useState(0);
+const [totalPaid, setTotalPaid] = useState(0);
+const [totalOutstanding, setTotalOutstanding] = useState(0);
 const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([]);
 const [dashboardProperties, setDashboardProperties] = useState<DashboardProperty[]>([]);
+const [selectedPropertyId, setSelectedPropertyId] = useState("all");
 const [dashboardUnits, setDashboardUnits] = useState<DashboardUnit[]>([]);
 useEffect(() => {
   const handleScroll = () => {
@@ -108,53 +115,123 @@ useEffect(() => {
 useEffect(() => {
     if (authLoading || !isAuthenticated) return;
   const loadDashboardStats = async () => {
-    const [properties, reservations, tasks, units, arrivals] =
+    const propertyFilter = selectedPropertyId !== "all";
+    let reservationsQuery = supabase
+  .from("reservations")
+  .select("*", { count: "exact", head: true });
+
+if (propertyFilter) {
+  reservationsQuery = reservationsQuery.eq(
+    "property_id",
+    selectedPropertyId
+  );
+}
+
+let arrivalsQuery = supabase
+  .from("reservations")
+  .select("*", { count: "exact", head: true })
+  .gte("check_in", new Date().toISOString().split("T")[0])
+  .in("status", ["pending", "confirmed"]);
+
+if (propertyFilter) {
+  arrivalsQuery = arrivalsQuery.eq("property_id", selectedPropertyId);
+}
+let financialReservationsQuery = supabase
+  .from("reservations")
+  .select("property_id, total_amount, paid_amount, status")
+  .neq("status", "cancelled");
+
+if (propertyFilter) {
+  financialReservationsQuery = financialReservationsQuery.eq(
+    "property_id",
+    selectedPropertyId
+  );
+}
+let tasksQuery = supabase
+  .from("tasks")
+  .select("*", { count: "exact", head: true })
+  .in("status", ["pending", "in_progress"]);
+
+if (propertyFilter) {
+  tasksQuery = tasksQuery.eq("property_id", selectedPropertyId);
+}
+let unitsQuery = supabase
+  .from("units")
+  .select("*", { count: "exact", head: true });
+
+if (propertyFilter) {
+  unitsQuery = unitsQuery.eq("property_id", selectedPropertyId);
+}
+    const [properties, reservations, tasks, units, arrivals, financialReservations] =
       await Promise.all([
         supabase
           .from("properties")
           .select("*", { count: "exact", head: true }),
 
-        supabase
-          .from("reservations")
-          .select("*", { count: "exact", head: true }),
+        reservationsQuery,
 
-        supabase
-          .from("tasks")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["pending", "in_progress"]),
+        tasksQuery,
 
-        supabase
-          .from("units")
-          .select("*", { count: "exact", head: true }),
+        unitsQuery,
 
-        supabase
-          .from("reservations")
-          .select("*", { count: "exact", head: true })
-          .gte("check_in", new Date().toISOString().split("T")[0])
-          .in("status", ["pending", "confirmed"]),
+arrivalsQuery,
+
+financialReservationsQuery,
       ]);
 
-    setPropertyCount(properties.count ?? 0);
+      setPropertyCount(
+  selectedPropertyId === "all" ? properties.count ?? 0 : 1
+);
     setReservationCount(reservations.count ?? 0);
     setTaskCount(tasks.count ?? 0);
     setUnitCount(units.count ?? 0);
     setUpcomingArrivals(arrivals.count ?? 0);
+    const financialData = financialReservations.data ?? [];
+
+const revenue = financialData.reduce(
+  (total, reservation) => total + Number(reservation.total_amount ?? 0),
+  0
+);
+
+const paid = financialData.reduce(
+  (total, reservation) => total + Number(reservation.paid_amount ?? 0),
+  0
+);
+
+const outstanding = financialData.reduce(
+  (total, reservation) =>
+    total + Math.max(
+      0,
+      Number(reservation.total_amount ?? 0) -
+      Number(reservation.paid_amount ?? 0)
+    ),
+  0
+);
+setTotalRevenue(revenue);
+setTotalPaid(paid);
+setTotalOutstanding(outstanding);
   };
 
   loadDashboardStats();
-}, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, selectedPropertyId]);
 useEffect(() => {
     if (authLoading || !isAuthenticated) return;
   const loadTodayTasks = async () => {
     const now = new Date();
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("id, title, due_at, status, property_id, unit_id")
-      .gte("due_at", now.toISOString())
-      .in("status", ["pending", "in_progress"])
-      .order("due_at", { ascending: true })
-      .limit(5);
+    let tasksQuery = supabase
+  .from("tasks")
+  .select("id, title, due_at, status, property_id, unit_id")
+  .gte("due_at", now.toISOString())
+  .in("status", ["pending", "in_progress"]);
+
+if (selectedPropertyId !== "all") {
+  tasksQuery = tasksQuery.eq("property_id", selectedPropertyId);
+}
+
+const { data, error } = await tasksQuery
+  .order("due_at", { ascending: true })
+  .limit(5);
 
     if (error) {
       console.error("Erreur chargement tâches :", error.message);
@@ -173,7 +250,7 @@ setDashboardUnits(unitsData ?? []);
   };
 
   loadTodayTasks();
-}, [authLoading, isAuthenticated]);
+}, [authLoading, isAuthenticated, selectedPropertyId]);
 
   useEffect(() => {
   supabase.auth.getSession().then(({ data: { session } }) => {
@@ -422,36 +499,60 @@ return (
       </header>
 
 <div id="dashboard" className="mx-auto max-w-[1600px] px-4 pt-8 pb-28 sm:px-6 sm:pt-10 lg:ml-64 lg:px-12 lg:pb-10 xl:px-16">
-        <section className="mb-9">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-[#5279a8]">
+        <section className="mb-9 rounded-3xl border border-[#e2e7ef] bg-gradient-to-br from-white via-white to-[#edf2f8] p-6 shadow-[0_10px_35px_rgba(23,45,77,0.05)] sm:p-8">
+          <p className="inline-flex items-center gap-2 rounded-full border border-[#dce5f0] bg-[#f5f8fc] px-3 py-1.5 text-[10px] font-semibold tracking-[0.2em] text-[#5279a8]">
   VOTRE ESPACE DE GESTION
 </p>
-<h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#172d4d] sm:text-4xl">
+<h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-5xl">
   Bonjour 👋
 </h2>
-<p className="mt-2 text-[15px] leading-7 text-slate-500">
+<p className="mt-3 max-w-xl text-sm leading-7 text-[#697586] sm:text-[15px]">
   Voici un aperçu de votre activité.
 </p>
-        </section>
+<div className="mt-6 max-w-sm">
+  <label className="mb-2 block text-sm font-medium text-[#344054]">
+    Établissement affiché
+  </label>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <select
+    value={selectedPropertyId}
+    onChange={(e) => setSelectedPropertyId(e.target.value)}
+    className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-sm text-[#171d29] outline-none transition focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
+  >
+    <option value="all">Tous les établissements</option>
+
+    {dashboardProperties.map((property) => (
+      <option key={property.id} value={property.id}>
+        {property.name}
+      </option>
+    ))}
+  </select>
+</div>
+        </section>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
   { label: "Établissements", value: propertyCount, icon: Building2 },
   { label: "Réservations", value: reservationCount, icon: CalendarDays },
   { label: "Tâches en cours", value: taskCount, icon: ClipboardList },
   { label: "Arrivées à venir", value: upcomingArrivals, icon: CalendarRange },
+  { label: "Montant total réservé", value: `${totalRevenue.toLocaleString("fr-FR")} €`, icon: Wallet },
+{ label: "Montant encaissé", value: `${totalPaid.toLocaleString("fr-FR")} €`, icon: CreditCard },
+{ label: "Reste à encaisser", value: `${totalOutstanding.toLocaleString("fr-FR")} €`, icon: TrendingUp },
 ].map((item) => (
             <div
               key={item.label}
-              className="group relative overflow-hidden rounded-2xl border border-[#e2e7ef] bg-white p-4 sm:p-6 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-[#9fb5cf] hover:shadow-[0_16px_40px_rgba(23,45,77,0.12)]"
+              className="group relative overflow-hidden rounded-3xl border border-[#e6eaf0] bg-white p-5 shadow-[0_4px_20px_rgba(16,30,51,0.035)] transition-all duration-300 hover:-translate-y-1 hover:border-[#c5d2e2] hover:shadow-[0_18px_40px_rgba(16,30,51,0.09)] sm:p-6"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{item.label}</p>
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#dce5f0] bg-gradient-to-br from-[#f5f8fc] to-[#eaf0f7] text-[#29466b] shadow-sm transition-all duration-300 group-hover:border-[#b9c9dc] group-hover:shadow-md">
-  <item.icon size={21} strokeWidth={1.7} />
-</span>
-              </div>
-              <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums text-[#172d4d] sm:mt-5 sm:text-3xl">
+  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8993a2]">
+    {item.label}
+  </p>
+
+  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5eaf1] bg-[#f1f5fa] text-[#29466b] transition-all duration-300 group-hover:border-[#b9c9dc] group-hover:bg-[#e8eff7] group-hover:shadow-sm sm:h-11 sm:w-11">
+    <item.icon size={21} strokeWidth={1.7} />
+  </span>
+</div>
+<p className="mt-5 text-4xl font-semibold tracking-[-0.05em] tabular-nums text-[#101e33] sm:mt-6 sm:text-[42px]">
   {item.value}
 </p>
             </div>
@@ -459,15 +560,17 @@ return (
         </section>
 
        <section className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-3">
-          <div className="group relative overflow-hidden rounded-2xl border border-[#e2e7ef] bg-white p-5 sm:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-all duration-300 hover:border-[#c5d2e2] hover:shadow-[0_16px_40px_rgba(23,45,77,0.08)] lg:col-span-2">
+        <div className="group relative overflow-hidden rounded-3xl border border-[#e9edf2] bg-white p-5 shadow-[0_6px_28px_rgba(16,30,51,0.04)] transition-all duration-300 hover:border-[#c5d2e2] hover:shadow-[0_16px_40px_rgba(16,30,51,0.08)] sm:p-7 lg:col-span-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold tracking-tight text-[#172d4d]">Prochaines tâches</h3>
-              <span className="rounded-full border border-[#e2e7ef] bg-[#f5f7fa] px-3 py-1 text-[10px] font-semibold tracking-[0.16em] text-[#5279a8]">
+              <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#101e33] sm:text-2xl">
+  Prochaines tâches
+</h3>
+              <span className="rounded-full border border-[#dce5f0] bg-[#edf2f8]/80 px-3 py-1.5 text-[9px] font-semibold tracking-[0.18em] text-[#45658c]">
   APERÇU
 </span>
             </div>
 
-              <div className="mt-6 space-y-5">
+              <div className="mt-7 space-y-4">
   {todayTasks.length === 0 ? (
     <p className="text-sm text-gray-500">
       Aucune tâche prévue aujourd'hui.
@@ -476,9 +579,9 @@ return (
     todayTasks.map((task) => (
       <div
         key={task.id}
-        className="group/task flex flex-col gap-3 rounded-xl border border-transparent border-b-[#e8edf3] px-3 py-4 transition-all duration-200 hover:border-[#e2e7ef] hover:bg-[#f8fafd] hover:shadow-sm sm:flex-row sm:items-center"
+        className="group/task flex flex-col gap-3 rounded-2xl border border-[#edf0f3] bg-[#fcfdfe] px-4 py-4 shadow-[0_2px_10px_rgba(16,30,51,0.025)] transition-all duration-300 hover:border-[#d5e0ed] hover:bg-white hover:shadow-[0_8px_22px_rgba(16,30,51,0.06)] sm:flex-row sm:items-center sm:px-5"
       >
-        <span className="shrink-0 rounded-lg border border-[#e2e7ef] bg-[#f5f8fc] px-3 py-2 text-xs font-semibold tabular-nums text-[#29466b]">
+        <span className="shrink-0 rounded-xl border border-[#e5eaf0] bg-[#f5f7fa] px-3.5 py-3 text-xs font-semibold tracking-tight tabular-nums text-[#29466b] transition-colors duration-200 group-hover/task:bg-[#edf2f8]">
           {new Date(task.due_at).toLocaleString("fr-FR", {
   day: "2-digit",
   month: "long",
@@ -488,18 +591,18 @@ return (
         </span>
 
         <div className="flex-1">
-  <p className="text-sm font-semibold tracking-tight text-[#172d4d]">
+          <p className="text-[15px] font-semibold tracking-[-0.02em] text-[#172d4d] sm:text-base">
   {task.title}
 </p>
 
-  <p className="mt-1 text-xs leading-5 text-slate-500">
+<p className="mt-1 text-xs leading-5 text-[#858e9b] sm:text-[13px]">
     Établissement :{" "}
     {dashboardProperties.find(
       (property) => property.id === task.property_id
     )?.name ?? "Établissement inconnu"}
   </p>
 
-  <p className="mt-1 text-xs leading-5 text-slate-500">
+  <p className="mt-1 text-[11px] leading-5 text-[#8993a3] sm:text-xs">
     Logement :{" "}
     {dashboardUnits.find(
       (unit) => unit.id === task.unit_id
@@ -508,7 +611,7 @@ return (
 </div>
 
         <div className="flex flex-wrap items-center gap-2">
-  <span className="w-fit rounded-full border border-[#dce5f0] bg-[#f5f8fc] px-3 py-1.5 text-[11px] font-semibold tracking-wide text-[#29466b]">
+  <span className="w-fit rounded-full border border-[#e2e8f0] bg-[#f4f6f9] px-3.5 py-2 text-[10px] font-semibold tracking-[0.06em] text-[#45658c]">
     {task.status === "pending"
       ? "À effectuer"
       : task.status === "in_progress"
@@ -521,7 +624,7 @@ return (
       onClick={() =>
         updateDashboardTaskStatus(task.id, "in_progress")
       }
-      className="rounded-lg border border-[#dce5f0] bg-[#f5f8fc] px-3 py-2 text-xs font-semibold text-[#29466b] transition-all duration-200 hover:border-[#9fb5cf] hover:bg-[#eaf0f7] hover:shadow-sm"
+      className="rounded-xl border border-[#dce5f0] bg-white px-4 py-2.5 text-xs font-semibold tracking-tight text-[#29466b] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9fb5cf] hover:bg-[#f5f8fc] hover:shadow-sm"
     >
       Commencer
     </button>
@@ -532,7 +635,7 @@ return (
       onClick={() =>
         updateDashboardTaskStatus(task.id, "completed")
       }
-      className="rounded-lg border border-[#d5e7dd] bg-[#f1f8f4] px-3 py-2 text-xs font-semibold text-[#27845d] transition-all duration-200 hover:border-[#a8d0ba] hover:bg-[#e7f3ec] hover:shadow-sm"
+      className="rounded-xl border border-[#d5e7dd] bg-white px-4 py-2.5 text-xs font-semibold tracking-tight text-[#27845d] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#a8d0ba] hover:bg-[#f1f8f4] hover:shadow-sm"
     >
       Terminer
     </button>
@@ -546,57 +649,64 @@ return (
 
           </div>
 
-<div className="relative overflow-hidden rounded-2xl border border-[#29466b] bg-gradient-to-br from-[#101e33] via-[#172d4d] to-[#29466b] p-5 sm:p-7 text-white shadow-[0_16px_40px_rgba(23,45,77,0.18)] transition-all duration-300 hover:shadow-[0_20px_45px_rgba(23,45,77,0.25)]">
-           <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-300/10 blur-3xl" />
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-2xl leading-none text-blue-200 shadow-inner">
-  ✦
+<div className="relative overflow-hidden rounded-3xl border border-[#29466b] bg-gradient-to-br from-[#101e33] via-[#172d4d] to-[#29466b] p-6 sm:p-7 text-white shadow-[0_12px_35px_rgba(16,30,51,0.16)] transition-all duration-300 hover:shadow-[0_18px_42px_rgba(16,30,51,0.22)]">
+  <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-300/10 blur-3xl" />
+  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-2xl leading-none text-blue-200 shadow-inner">
+    ✦
+  </div>
+  <p className="mt-5 text-xs font-semibold tracking-widest text-blue-200">
+    INTELLIGENCE ARTIFICIELLE
+  </p>
+  <h3 className="mt-4 text-[26px] font-semibold tracking-[-0.04em] text-white sm:text-3xl">
+    Votre assistant intelligent.
+  </h3>
+  <p className="mt-3 text-[13px] leading-7 text-blue-100/85 sm:text-sm">
+    Gîte Assistant vous aidera à organiser vos opérations,
+    anticiper les imprévus et simplifier votre quotidien.
+  </p>
+  <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-white/[0.09]">
+    <p className="text-[15px] font-semibold tracking-tight text-white">
+      Votre assistant se prépare...
+    </p>
+    <p className="mt-2 text-xs leading-6 text-blue-100/75">
+      Les fonctionnalités IA seront connectées progressivement.
+    </p>
+  </div>
 </div>
-            <p className="mt-5 text-xs font-semibold tracking-widest text-blue-200">
-              INTELLIGENCE ARTIFICIELLE
-            </p>
-            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">
-  Votre assistant intelligent.
-</h3>
-            <p className="mt-3 text-sm leading-7 text-blue-100/90">
-              Gîte Assistant vous aidera à organiser vos opérations,
-              anticiper les imprévus et simplifier votre quotidien.
-            </p>
-            <div className="mt-7 rounded-2xl border border-white/15 bg-white/[0.07] p-5 shadow-inner backdrop-blur-md transition-all duration-300 hover:border-white/25 hover:bg-white/[0.11]">
-              <p className="text-sm font-medium">
-                Votre assistant se prépare...
-              </p>
-              <p className="mt-1 text-xs text-slate-200">
-                Les fonctionnalités IA seront connectées progressivement.
-              </p>
-            </div>
-          </div>
-        </section>
+</section>
+
 <OrganizationForm />
+
 <div id="etablissements" className="scroll-mt-8">
   <PropertyForm />
   <PropertyList />
 </div>
-       <div id="logements" className="scroll-mt-8">
+
+<div id="logements" className="scroll-mt-8">
   <UnitForm />
   <UnitList />
 </div>
-        <div id="reservations" className="scroll-mt-8">
+
+<div id="reservations" className="scroll-mt-8">
   <ReservationForm />
   <ReservationList />
 </div>
-        <div id="calendrier" className="scroll-mt-8">
+
+<div id="calendrier" className="scroll-mt-8">
   <ReservationCalendar />
 </div>
-        <div id="taches" className="scroll-mt-8">
+
+<div id="taches" className="scroll-mt-8">
   <TaskForm />
   <TaskList />
 </div>
-        <footer className="mt-12 border-t border-[#e2e7ef] pt-6 text-center text-xs tracking-wide text-[#8993a3]">
-          Gîte Assistant · Votre gestion, intelligemment simplifiée.
-          <br />
-          Prototype de démonstration
-        </footer>
-      </div>
-    </main>
+
+<footer className="mt-12 border-t border-[#e2e7ef] pt-6 text-center text-xs tracking-wide text-[#8993a3]">
+  Gîte Assistant · Votre gestion, intelligemment simplifiée.
+  <br />
+  Prototype de démonstration
+</footer>
+</div>
+</main>
   );
 }

@@ -13,6 +13,8 @@ type Reservation = {
   check_out: string;
   status: string;
   note: string | null;
+  total_amount: number | null;
+  paid_amount: number | null;
 };
 
 type Property = {
@@ -137,7 +139,28 @@ export default function ReservationList() {
             <p className="mt-1 text-sm text-gray-600">
               <strong>Départ :</strong> {reservation.check_out}
             </p>
+{reservation.total_amount !== null && (
+  <p className="mt-2 text-sm text-gray-600">
+    <strong>Montant total :</strong>{" "}
+    {Number(reservation.total_amount).toLocaleString("fr-FR")} €
+  </p>
+)}
 
+{reservation.paid_amount !== null && (
+  <p className="mt-1 text-sm text-gray-600">
+    <strong>Montant encaissé :</strong>{" "}
+    {Number(reservation.paid_amount).toLocaleString("fr-FR")} €
+  </p>
+)}
+{reservation.total_amount !== null && reservation.paid_amount !== null && (
+  <p className="mt-1 text-sm font-medium text-[#29466b]">
+    <strong>Reste à encaisser :</strong>{" "}
+    {Math.max(
+      0,
+      Number(reservation.total_amount) - Number(reservation.paid_amount)
+    ).toLocaleString("fr-FR")} €
+  </p>
+)}
             {reservation.reference && (
               <p className="mt-1 text-sm text-gray-600">
                 <strong>Référence :</strong> {reservation.reference}

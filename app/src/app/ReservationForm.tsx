@@ -25,6 +25,8 @@ export default function ReservationForm() {
   const [checkOut, setCheckOut] = useState("");
   const [status, setStatus] = useState("pending");
   const [note, setNote] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+const [paidAmount, setPaidAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -81,7 +83,9 @@ export default function ReservationForm() {
       check_in: checkIn,
       check_out: checkOut,
       status,
-      note: note.trim() || null,
+note: note.trim() || null,
+total_amount: totalAmount ? Number(totalAmount) : null,
+paid_amount: paidAmount ? Number(paidAmount) : null,
     });
 
     if (error) {
@@ -95,6 +99,8 @@ export default function ReservationForm() {
       setCheckOut("");
       setStatus("pending");
       setNote("");
+      setTotalAmount("");
+setPaidAmount("");
     }
 
     setLoading(false);
@@ -168,7 +174,35 @@ export default function ReservationForm() {
           required
           className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] placeholder:text-slate-400 outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
         />
+<div>
+  <label className="mb-2 block text-sm font-medium">
+    Montant total (€)
+  </label>
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={totalAmount}
+    onChange={(e) => setTotalAmount(e.target.value)}
+    placeholder="Ex. : 450"
+    className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
+  />
+</div>
 
+<div>
+  <label className="mb-2 block text-sm font-medium">
+    Montant encaissé (€)
+  </label>
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={paidAmount}
+    onChange={(e) => setPaidAmount(e.target.value)}
+    placeholder="Ex. : 200"
+    className="w-full rounded-xl border border-[#d5dbe4] bg-white px-4 py-3 text-[#171d29] outline-none transition duration-200 focus:border-[#5279a8] focus:ring-4 focus:ring-[#5279a8]/10"
+  />
+</div>
         <div>
           <label className="mb-2 block text-sm font-medium">
             Date d'arrivée
