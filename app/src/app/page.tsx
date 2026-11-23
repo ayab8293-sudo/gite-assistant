@@ -1174,7 +1174,16 @@ background: item.revenue > 0
 </div>
 
 <div id="calendrier" className="scroll-mt-8">
-  <ReservationCalendar />
+  <ReservationCalendar
+  selectedPropertyId={selectedPropertyId}
+  timezone={
+    selectedPropertyId === "all"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : dashboardProperties.find(
+          (property) => property.id === selectedPropertyId
+        )?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  }
+/>
 </div>
 
 <div id="taches" className="scroll-mt-8">

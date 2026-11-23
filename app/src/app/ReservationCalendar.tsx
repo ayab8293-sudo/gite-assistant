@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getLocalDate } from "../lib/date-utils";
 
 type Reservation = {
   id: string;
@@ -10,24 +11,51 @@ type Reservation = {
   check_out: string;
   status: string;
 };
-
-export default function ReservationCalendar() {
+type ReservationCalendarProps = {
+  selectedPropertyId: string;
+  timezone: string;
+};
+export default function ReservationCalendar({
+  selectedPropertyId,
+  timezone,
+}: ReservationCalendarProps) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
-const [selectedDate, setSelectedDate] = useState(() => {
-  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(() => {
+  const [year, month] = getLocalDate(
+    new Date(),
+    timezone
+  ).split("-").map(Number);
 
-  return `${today.getFullYear()}-${String(
-    today.getMonth() + 1
-  ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  return new Date(Date.UTC(year, month - 1, 1));
 });
+
+const [selectedDate, setSelectedDate] = useState(() =>
+  getLocalDate(new Date(), timezone)
+);
+useEffect(() => {
+  const today = getLocalDate(new Date(), timezone);
+
+  const [year, month] = today.split("-").map(Number);
+
+  setSelectedDate(today);
+  setCurrentDate(new Date(Date.UTC(year, month - 1, 1)));
+}, [timezone]);
   useEffect(() => {
     const loadReservations = async () => {
-      const { data, error } = await supabase
-        .from("reservations")
-        .select("id, guest_label, check_in, check_out, status")
-        .neq("status", "cancelled");
+      let reservationsQuery = supabase
+  .from("reservations")
+  .select("id, guest_label, check_in, check_out, status")
+  .neq("status", "cancelled");
+
+if (selectedPropertyId !== "all") {
+  reservationsQuery = reservationsQuery.eq(
+    "property_id",
+    selectedPropertyId
+  );
+}
+
+const { data, error } = await reservationsQuery;
 
       if (error) {
         console.error("Erreur calendrier :", error.message);
@@ -39,30 +67,24 @@ const [selectedDate, setSelectedDate] = useState(() => {
     };
 
     loadReservations();
-  }, []);
+    }, [selectedPropertyId]);
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const year = currentDate.getUTCFullYear();
+const month = currentDate.getUTCMonth();
+const firstDay = new Date(Date.UTC(year, month, 1));
+const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+const startingDay = (firstDay.getUTCDay() + 6) % 7;
 
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const startingDay = (firstDay.getDay() + 6) % 7;
-
-  const getDateKey = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
+  const getDateKey = (day: number) =>
+  `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const previousMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  setCurrentDate(new Date(Date.UTC(year, month - 1, 1)));
+};
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+const nextMonth = () => {
+  setCurrentDate(new Date(Date.UTC(year, month + 1, 1)));
+};
 
   return (
     <section className="mt-5 rounded-2xl border border-[#e2e7ef] bg-white p-3 sm:p-5 lg:p-7 shadow-[0_8px_30px_rgba(23,45,77,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_35px_rgba(23,45,77,0.08)]">
@@ -84,9 +106,10 @@ const [selectedDate, setSelectedDate] = useState(() => {
 
           <h3 className="min-w-36 text-center font-semibold capitalize">
             {currentDate.toLocaleDateString("fr-FR", {
-              month: "long",
-              year: "numeric",
-            })}
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+})}
           </h3>
 
           <button
@@ -122,7 +145,7 @@ const [selectedDate, setSelectedDate] = useState(() => {
 
             {Array.from({ length: daysInMonth }).map((_, index) => {
               const day = index + 1;
-              const dateKey = getDateKey(new Date(year, month, day));
+              const dateKey = getDateKey(day);
 
               const arrivals = reservations.filter(
                 (reservation) => reservation.check_in === dateKey
@@ -132,7 +155,7 @@ const [selectedDate, setSelectedDate] = useState(() => {
                 (reservation) => reservation.check_out === dateKey
               );
 
-              const isToday = dateKey === getDateKey(new Date());
+              const isToday = dateKey === getLocalDate(new Date(), timezone);
 
               return (
                 <div
@@ -180,11 +203,12 @@ const [selectedDate, setSelectedDate] = useState(() => {
          <div className="mt-6 border-t border-[#e8edf3] pt-5">
   <h3 className="font-semibold">
     Réservations du{" "}
-    {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })}
+    {new Date(selectedDate + "T12:00:00Z").toLocaleDateString("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+})}
   </h3>
 
   {reservations.filter(
