@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  LayoutDashboard,
   Building2,
   BedDouble,
   CalendarDays,
@@ -14,6 +13,8 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { getLocalDate } from "../lib/date-utils";
+import { useProperty } from "./contexts/PropertyContext";
+import AppNavigation from "../components/AppNavigation";
 import LoginForm from "./LoginForm";
 import ResetPasswordForm from "./ResetPasswordForm";
 import OrganizationForm from "./OrganizationForm";
@@ -47,6 +48,13 @@ type DashboardUnit = {
   property_id: string;
 };
 export default function Home() {
+  const {
+    selectedPropertyId,
+    setSelectedPropertyId,
+    dashboardProperties,
+    setDashboardProperties,
+
+  } = useProperty();
   const updateDashboardTaskStatus = async (
   taskId: string,
   newStatus: string
@@ -71,7 +79,6 @@ export default function Home() {
 };
   const [connectionStatus, setConnectionStatus] = useState("Vérification...");
 const [databaseStatus, setDatabaseStatus] = useState("Test en attente...");
-const [activeSection, setActiveSection] = useState("dashboard");
 const [isAuthenticated, setIsAuthenticated] = useState(false);
 const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 const [authLoading, setAuthLoading] = useState(true);
@@ -94,37 +101,8 @@ const [monthlyPaid, setMonthlyPaid] = useState<
   { month: string; paid: number }[]
 >([]);
 const [todayTasks, setTodayTasks] = useState<DashboardTask[]>([]);
-const [dashboardProperties, setDashboardProperties] = useState<DashboardProperty[]>([]);
-const [selectedPropertyId, setSelectedPropertyId] = useState("all");
 const [dashboardUnits, setDashboardUnits] = useState<DashboardUnit[]>([]);
-useEffect(() => {
-  const handleScroll = () => {
-    const sections = [
-      "etablissements",
-      "logements",
-      "reservations",
-      "calendrier",
-      "taches",
-    ];
 
-    let currentSection = "dashboard";
-
-    sections.forEach((id) => {
-      const element = document.getElementById(id);
-
-      if (element && element.getBoundingClientRect().top <= 180) {
-        currentSection = id;
-      }
-    });
-
-    setActiveSection(currentSection);
-  };
-
-  window.addEventListener("scroll", handleScroll, { passive: true });
-  handleScroll();
-
-  return () => window.removeEventListener("scroll", handleScroll);
-}, []);
 useEffect(() => {
     if (authLoading || !isAuthenticated) return;
   const loadDashboardStats = async () => {
@@ -546,140 +524,7 @@ if (!isAuthenticated) {
 
 return (
   <main className="min-h-screen bg-[#f5f7fa] text-[#171d29]">
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/10 bg-[#111d30] px-5 py-7 text-white lg:flex">
-  <div className="mb-12 px-2">
-    <h1 className="text-2xl font-bold tracking-tight">
-      Gîte<span className="text-blue-300">Assistant</span>
-    </h1>
-    <p className="mt-2 text-xs tracking-wide text-slate-400">
-      MANAGEMENT PLATFORM
-    </p>
-  </div>
-
-  <p className="mb-4 px-3 text-[10px] font-semibold tracking-[0.2em] text-slate-500">
-    ESPACE DE TRAVAIL
-  </p>
-
-  <nav className="flex flex-col gap-2">
-    <a
-  href="#dashboard"
-  onClick={() => setActiveSection("dashboard")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "dashboard"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <LayoutDashboard size={18} strokeWidth={1.7} />
-  Vue d'ensemble
-</span>
-</a>
-    <a
-  href="#etablissements"
-  onClick={() => setActiveSection("etablissements")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "etablissements"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <Building2 size={18} strokeWidth={1.7} />
-  Établissements
-</span>
-</a>
-    <a
-  href="#logements"
-  onClick={() => setActiveSection("logements")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "logements"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <BedDouble size={18} strokeWidth={1.7} />
-  Logements
-</span>
-</a>
-    <a
-  href="#reservations"
-  onClick={() => setActiveSection("reservations")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "reservations"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <CalendarDays size={18} strokeWidth={1.7} />
-  Réservations
-</span>
-</a>
-    <a
-  href="#calendrier"
-  onClick={() => setActiveSection("calendrier")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "calendrier"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <CalendarRange size={18} strokeWidth={1.7} />
-  Calendrier
-</span>
-</a>
-    <a
-  href="#taches"
-  onClick={() => setActiveSection("taches")}
-  className={`rounded-xl px-4 py-3 text-sm transition ${
-    activeSection === "taches"
-      ? "bg-white/10 font-semibold text-white"
-      : "text-slate-300 hover:bg-white/10 hover:text-white"
-  }`}
->
-  <span className="flex items-center gap-3">
-  <ClipboardList size={18} strokeWidth={1.7} />
-  Tâches
-</span>
-</a>
-  </nav>
-
-  <div className="mt-auto rounded-xl border border-white/10 bg-white/[0.05] p-4">
-    <p className="text-xs font-medium text-white">Gîte Assistant</p>
-    <p className="mt-1 text-[11px] text-slate-400">
-      Votre espace de gestion intelligent.
-    </p>
-  </div>
-</aside>
-<nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e2e7ef] bg-white/95 px-2 py-3 shadow-[0_-8px_30px_rgba(23,45,77,0.08)] backdrop-blur-xl lg:hidden">
-  <div className="flex items-center justify-around">
-    {[
-      { id: "dashboard", label: "Accueil", icon: LayoutDashboard, href: "#dashboard" },
-      { id: "etablissements", label: "Établ.", icon: Building2, href: "#etablissements" },
-      { id: "logements", label: "Logements", icon: BedDouble, href: "#logements" },
-      { id: "reservations", label: "Réserv.", icon: CalendarDays, href: "#reservations" },
-      { id: "calendrier", label: "Calendrier", icon: CalendarRange, href: "#calendrier" },
-      { id: "taches", label: "Tâches", icon: ClipboardList, href: "#taches" },
-    ].map((item) => (
-      <a
-        key={item.id}
-        href={item.href}
-        onClick={() => setActiveSection(item.id)}
-        className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[9px] transition-colors ${
-          activeSection === item.id
-            ? "font-semibold text-[#29466b]"
-            : "text-slate-400"
-        }`}
-      >
-        <item.icon size={19} strokeWidth={1.8} />
-        <span>{item.label}</span>
-      </a>
-    ))}
-  </div>
-</nav>
+    <AppNavigation />
     <div className="lg:ml-64">
   <p className="px-6 py-2 text-sm">
     Connexion Supabase : {connectionStatus}
